@@ -1,0 +1,68 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: simple-order-pay-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-simple_order_pay}
+      MYSQL_USER: ${MYSQL_USER:-simple_order_pay}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: ${TZ:-Asia/Shanghai}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - simple_order_pay_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: simple-order-pay-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8001}:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - simple_order_pay_net
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: simple-order-pay-frontend
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: /api
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3001}:80"
+    depends_on:
+      - backend
+    networks:
+      - simple_order_pay_net
+
+networks:
+  simple_order_pay_net:
+    name: simple-order-pay-net
+
+volumes:
+  mysql_data:
+    name: simple-order-pay-mysql-data
+  uploads:
+    name: simple-order-pay-uploads

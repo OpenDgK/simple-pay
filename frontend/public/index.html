@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Order Pay</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script defer src="/config.js"></script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <main>
+        <section id="homeView" class="view active">
+          <section class="hero" aria-label="商品购买">
+            <div class="hero-copy">
+              <div id="heroBadge" class="badge">自助开通 · 在线支付</div>
+              <h1 id="productTitle">PLUS一月</h1>
+              <div class="stats" aria-label="商品摘要">
+                <div class="stat">
+                  <strong><span id="priceText">99.00</span> <em id="currencyText">CNY</em></strong>
+                  <span>当前商品价格</span>
+                </div>
+                <div class="stat">
+                  <strong>免登录</strong>
+                  <span>订单号 + 查询码查看结果</span>
+                </div>
+                <div class="stat">
+                  <strong>微信/支付宝</strong>
+                  <span>在线支付</span>
+                </div>
+              </div>
+              <div class="feature-stack">
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature1">下单后自动生成订单号</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature2">支持微信 / 支付宝支付</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature3">交付结果可在线查询</span></div>
+              </div>
+            </div>
+
+            <div class="hero-right">
+              <form id="orderForm" class="order-form hero-card" enctype="multipart/form-data">
+                <div class="section-title">
+                  <h2 id="order">立即下单</h2>
+                  <p>选择商品并填写邮箱，支付后请保存订单号和查询码。</p>
+                </div>
+                <fieldset class="product-fieldset">
+                  <legend>选择商品</legend>
+                  <div id="productOptions" class="product-options" aria-live="polite"></div>
+                </fieldset>
+                <label>
+                  邮箱
+                  <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required />
+                </label>
+                <button id="submitOrderBtn" class="button primary wide" type="submit">立即支付</button>
+              </form>
+            </div>
+          </section>
+
+          <section id="paymentResult" class="panel result-panel" hidden>
+            <div class="section-title">
+              <h2>订单已生成</h2>
+              <p>请保存下面的信息，后续查询交付结果会用到。</p>
+            </div>
+            <dl class="order-meta">
+              <div><dt>订单号</dt><dd id="createdOrderNo">-</dd></div>
+              <div><dt>查询码</dt><dd id="createdQueryCode">-</dd></div>
+              <div><dt>支付状态</dt><dd id="createdPayStatus">pending</dd></div>
+            </dl>
+            <div class="token-box">
+              <span>查询链接</span>
+              <code id="createdTokenUrl">-</code>
+            </div>
+            <div id="payActionArea" class="pay-action"></div>
+          </section>
+
+          <section id="flow" class="steps-section">
+            <div class="section-title centered">
+              <h2 id="flowTitle">三步完成开通</h2>
+              <p id="flowIntro">选择商品、填写邮箱、完成支付后等待交付。</p>
+            </div>
+            <div class="steps-grid">
+              <article class="step-card">
+                <span class="step-number">1</span>
+                <h3 id="step1Title">选择商品</h3>
+                <p id="step1Body">选择需要购买的商品，价格由管理员在后台设置。</p>
+              </article>
+              <article class="step-card">
+                <span class="step-number">2</span>
+                <h3 id="step2Title">填写邮箱</h3>
+                <p id="step2Body">只需要提供邮箱，用于接收和查询订单信息。</p>
+              </article>
+              <article class="step-card">
+                <span class="step-number">3</span>
+                <h3 id="step3Title">查询交付</h3>
+                <p id="step3Body">管理员交付后，可用订单号和查询码查看结果。</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="workband">
+            <section id="lookup" class="panel lookup-panel">
+              <div class="section-title">
+                <h2 id="lookupTitle">查询交付</h2>
+                <p id="lookupIntro">输入订单号和查询码，或打开一次性 token 链接。</p>
+              </div>
+              <form id="lookupForm" class="compact-form">
+                <label>
+                  订单号
+                  <input name="order_no" type="text" placeholder="SOP..." required />
+                </label>
+                <label>
+                  查询码
+                  <input name="query_code" type="text" placeholder="10 位查询码" required />
+                </label>
+                <button class="button secondary wide" type="submit">立即查询</button>
+              </form>
+              <div id="lookupResult" class="lookup-result"></div>
+            </section>
+
+            <section class="panel faq-panel">
+              <div class="section-title">
+                <h2 id="faqTitle">购买说明</h2>
+                <p id="faqIntro">下单前可以先确认支付、查询和交付方式。</p>
+              </div>
+              <div class="faq-grid">
+                <article class="faq-card">
+                  <h3 id="faq1Title">需要注册吗？</h3>
+                  <p id="faq1Body">不需要。支付后请保存订单号、查询码和查询链接。</p>
+                </article>
+                <article class="faq-card">
+                  <h3 id="faq2Title">怎么查询结果？</h3>
+                  <p id="faq2Body">使用订单号和查询码，或打开系统生成的查询链接。</p>
+                </article>
+                <article class="faq-card">
+                  <h3 id="faq3Title">支持哪些支付？</h3>
+                  <p id="faq3Body">后台已预留微信和支付宝支付接入，测试环境可使用 Mock 支付。</p>
+                </article>
+              </div>
+            </section>
+          </section>
+        </section>
+
+        <section id="tokenView" class="view">
+          <div class="single-column panel">
+            <div class="section-title">
+              <h1>订单交付结果</h1>
+              <p>该页面通过订单 token 打开，不需要登录。</p>
+            </div>
+            <div id="tokenResult"></div>
+          </div>
+        </section>
+
+        <section id="mockPayView" class="view">
+          <div class="single-column panel">
+            <div class="section-title">
+              <h1>Mock 支付测试</h1>
+              <p>当前为测试模式。真实支付配置完成后，这里会跳转到正式支付。</p>
+            </div>
+            <form id="mockPayForm" class="compact-form">
+              <label>
+                订单号
+                <input name="order_no" type="text" required />
+              </label>
+              <label>
+                查询码
+                <input name="query_code" type="text" required />
+              </label>
+              <button class="button primary wide" type="submit">模拟支付成功</button>
+            </form>
+            <div id="mockPayResult"></div>
+          </div>
+        </section>
+
+        <section id="adminView" class="view">
+          <div class="admin-shell">
+            <aside class="admin-side">
+              <div class="badge dark">订单工作台</div>
+              <h1>后台管理</h1>
+              <p>查看订单、填写交付结果，也可以设置商品价格和前台文案。</p>
+              <button id="adminLogoutBtn" class="button quiet wide" type="button">退出登录</button>
+            </aside>
+            <section class="admin-main">
+              <form id="adminLoginForm" class="panel admin-login">
+                <div class="section-title">
+                  <h2>管理员登录</h2>
+                  <p>用户名和密码来自服务器 `.env`。</p>
+                </div>
+                <label>
+                  用户名
+                  <input name="username" type="text" autocomplete="username" required />
+                </label>
+                <label>
+                  密码
+                  <input name="password" type="password" autocomplete="current-password" required />
+                </label>
+                <button class="button primary wide" type="submit">进入后台</button>
+              </form>
+
+              <div id="adminWorkspace" hidden>
+                <section class="panel admin-section">
+                  <div class="section-title">
+                    <h2>订单列表</h2>
+                    <p>点击订单行后，可以在下方编辑交付结果。</p>
+                  </div>
+                  <div class="admin-toolbar">
+                    <input id="adminSearchInput" type="search" placeholder="搜索订单号、邮箱或商品" />
+                    <select id="adminPayStatus">
+                      <option value="">支付状态</option>
+                      <option value="pending">pending</option>
+                      <option value="paid">paid</option>
+                      <option value="failed">failed</option>
+                    </select>
+                    <select id="adminDeliveryStatus">
+                      <option value="">交付状态</option>
+                      <option value="pending">pending</option>
+                      <option value="processing">processing</option>
+                      <option value="delivered">delivered</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                    <button id="refreshOrdersBtn" class="button secondary" type="button">刷新</button>
+                  </div>
+
+                  <div class="table-panel">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>订单号</th>
+                          <th>邮箱</th>
+                          <th>金额</th>
+                          <th>支付</th>
+                          <th>交付</th>
+                          <th>邮件</th>
+                          <th>附件</th>
+                          <th>创建时间</th>
+                        </tr>
+                      </thead>
+                      <tbody id="ordersTableBody"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <form id="deliveryForm" class="panel delivery-panel" hidden>
+                  <div class="section-title">
+                    <h2>交付结果</h2>
+                    <p id="selectedOrderTitle">选择一个订单后编辑。</p>
+                  </div>
+                  <label>
+                    交付状态
+                    <select name="delivery_status">
+                      <option value="pending">pending</option>
+                      <option value="processing">processing</option>
+                      <option value="delivered">delivered</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </label>
+                  <label>
+                    交付结果
+                    <textarea name="delivery_result" rows="6" placeholder="填写交付内容、网盘链接、说明或处理进度"></textarea>
+                  </label>
+                  <button class="button primary" type="submit">保存交付结果</button>
+                </form>
+
+                <section class="admin-management-grid">
+                  <section class="panel admin-section">
+                    <div class="section-title row-title">
+                      <div>
+                        <h2>商品设置</h2>
+                        <p>可新增多个商品，并设置每个商品的价格和展示状态。</p>
+                      </div>
+                      <button id="newProductBtn" class="button quiet" type="button">新增商品</button>
+                    </div>
+                    <div id="productList" class="admin-list"></div>
+                    <form id="productForm" class="stack-form">
+                      <input name="id" type="hidden" />
+                      <label>
+                        商品名称
+                        <input name="name" type="text" maxlength="120" placeholder="PLUS一月" required />
+                      </label>
+                      <label>
+                        商品说明
+                        <textarea name="description" maxlength="5000" rows="3" placeholder="可选，前台商品卡片会展示"></textarea>
+                      </label>
+                      <div class="form-grid">
+                        <label>
+                          价格（分）
+                          <input name="amount_cents" type="number" min="1" step="1" placeholder="9900" required />
+                        </label>
+                        <label>
+                          币种
+                          <input name="currency" type="text" maxlength="16" value="CNY" required />
+                        </label>
+                      </div>
+                      <div class="form-grid">
+                        <label>
+                          排序
+                          <input name="sort_order" type="number" min="0" step="1" value="100" required />
+                        </label>
+                        <label class="checkbox-label">
+                          <input name="active" type="checkbox" checked />
+                          前台展示
+                        </label>
+                      </div>
+                      <button class="button primary wide" type="submit">保存商品</button>
+                    </form>
+                  </section>
+
+                  <section class="panel admin-section">
+                    <div class="section-title">
+                      <h2>账号库存</h2>
+                      <p>每行一个账号和密码。库存为 0 时，前台会显示售罄并禁止支付。</p>
+                    </div>
+                    <label>
+                      选择商品
+                      <select id="inventoryProductSelect"></select>
+                    </label>
+                    <form id="inventoryBulkForm" class="stack-form">
+                      <label>
+                        批量添加
+                        <textarea
+                          name="items_text"
+                          rows="6"
+                          placeholder="account1 password1&#10;account2,password2&#10;account3----password3"
+                        ></textarea>
+                      </label>
+                      <button class="button primary wide" type="submit">导入库存</button>
+                    </form>
+                    <div class="table-panel mini-table-panel">
+                      <table class="mini-table">
+                        <thead>
+                          <tr>
+                            <th>账号</th>
+                            <th>密码</th>
+                            <th>状态</th>
+                            <th>订单</th>
+                            <th>操作</th>
+                          </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <form id="contentForm" class="panel admin-section stack-form">
+                    <div class="section-title">
+                      <h2>前台文案</h2>
+                      <p>首页卖点、流程和查询区文字都可以在这里改。</p>
+                    </div>
+                    <label>顶部标签<input name="heroBadge" type="text" /></label>
+                    <label>卖点 1<input name="feature1" type="text" /></label>
+                    <label>卖点 2<input name="feature2" type="text" /></label>
+                    <label>卖点 3<input name="feature3" type="text" /></label>
+                    <label>流程标题<input name="flowTitle" type="text" /></label>
+                    <label>流程说明<textarea name="flowIntro" rows="2"></textarea></label>
+                    <label>步骤 1 标题<input name="step1Title" type="text" /></label>
+                    <label>步骤 1 内容<textarea name="step1Body" rows="2"></textarea></label>
+                    <label>步骤 2 标题<input name="step2Title" type="text" /></label>
+                    <label>步骤 2 内容<textarea name="step2Body" rows="2"></textarea></label>
+                    <label>步骤 3 标题<input name="step3Title" type="text" /></label>
+                    <label>步骤 3 内容<textarea name="step3Body" rows="2"></textarea></label>
+                    <label>查询标题<input name="lookupTitle" type="text" /></label>
+                    <label>查询说明<textarea name="lookupIntro" rows="2"></textarea></label>
+                    <label>说明标题<input name="faqTitle" type="text" /></label>
+                    <label>说明副标题<textarea name="faqIntro" rows="2"></textarea></label>
+                    <label>说明 1 标题<input name="faq1Title" type="text" /></label>
+                    <label>说明 1 内容<textarea name="faq1Body" rows="2"></textarea></label>
+                    <label>说明 2 标题<input name="faq2Title" type="text" /></label>
+                    <label>说明 2 内容<textarea name="faq2Body" rows="2"></textarea></label>
+                    <label>说明 3 标题<input name="faq3Title" type="text" /></label>
+                    <label>说明 3 内容<textarea name="faq3Body" rows="2"></textarea></label>
+                    <button class="button primary wide" type="submit">保存前台文案</button>
+                  </form>
+                </section>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+.env
+.local-logs/
+backups/
+*.log
+__pycache__/
+.pytest_cache/
+node_modules/
+dist/
+uploads/
+local_preview*.db
+local_preview*.db-*
+*.db-journal
+*.db-wal
+*.db-shm
+local_uploads/
+frontend/public/config.js
