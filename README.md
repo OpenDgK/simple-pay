@@ -530,6 +530,13 @@ git clone git@github.com:OpenDgK/simple-pay.git
 cd simple-order-pay
 ```
 
+如果还没有配置 GitHub SSH key，也可以先用 HTTPS 克隆：
+
+```bash
+git clone https://github.com/OpenDgK/simple-pay.git
+cd simple-order-pay
+```
+
 2. 创建本地配置：
 
 ```bash
