@@ -501,6 +501,17 @@ db/schema.sql
 
 本项目建议作为一个独立商城项目管理，推荐单独创建 GitHub 仓库，例如 `simple-order-pay`。不要把服务器上的 `.env`、数据库、上传文件、日志和备份提交到 Git。
 
+本项目当前协作信息：
+
+```text
+GitHub: git@github.com:OpenDgK/simple-pay.git
+计划域名: pay.yingkai.shop
+计划服务器: 149.28.78.223
+生产部署目录: /opt/simple-order-pay
+```
+
+支付方式当前还没有最终确定。代码已经预留 `mock`、`xunhupay`、`alipay`、`daxpay` 四种模式；新员工主要任务可以从支付接入开始，本地开发时先保持 `PAYMENT_MODE=mock`。
+
 ### 项目边界
 
 - 本项目只放在 `simple-order-pay/` 目录内。
@@ -515,7 +526,7 @@ db/schema.sql
 1. 克隆仓库：
 
 ```bash
-git clone <你的 GitHub 仓库地址>
+git clone git@github.com:OpenDgK/simple-pay.git
 cd simple-order-pay
 ```
 
@@ -628,7 +639,7 @@ docker compose logs --tail=100 frontend
 ```bash
 sudo mkdir -p /opt/simple-order-pay
 cd /opt/simple-order-pay
-git clone <你的 GitHub 仓库地址> .
+git clone git@github.com:OpenDgK/simple-pay.git .
 cp .env.example .env
 nano .env
 sudo bash scripts/deploy.sh
@@ -652,7 +663,8 @@ sudo bash scripts/deploy.sh
 
 ### 当前待办
 
-- 接入虎皮椒支付模式。
+- 确定最终支付渠道。
+- 继续完善虎皮椒或其他支付渠道的真实商户联调。
 - 完成真实支付回调验签测试。
 - 远程服务器配置 HTTPS 域名。
 - 远程 `.env` 配置阿里云 SMTP。
