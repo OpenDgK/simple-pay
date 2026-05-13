@@ -12,16 +12,6 @@ const CONTENT_KEYS = [
   "step2Body",
   "step3Title",
   "step3Body",
-  "lookupTitle",
-  "lookupIntro",
-  "faqTitle",
-  "faqIntro",
-  "faq1Title",
-  "faq1Body",
-  "faq2Title",
-  "faq2Body",
-  "faq3Title",
-  "faq3Body",
 ];
 
 const state = {
@@ -298,7 +288,6 @@ function manualPaymentMarkup(order) {
         ${qr}
         <div class="manual-payment-meta">
           <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
-          <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
           <p><strong>金额：</strong>${escapeHtml(order.amount_text)} ${escapeHtml(order.currency)}</p>
         </div>
       </div>
@@ -311,10 +300,9 @@ function manualSubmittedMarkup(order) {
   return `
     <div class="checkout-state warning">
       <strong>已提交，等待管理员确认收款。</strong>
-      <span>管理员会尽快核对收款，10 分钟内发货。账号密码会自动发送到你的邮箱，请保存订单号和查询码。</span>
+      <span>管理员会尽快核对收款，10 分钟内发货。账号密码会自动发送到你的邮箱。</span>
       <div class="manual-payment-meta">
         <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
-        <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
       </div>
     </div>
   `;
@@ -378,10 +366,10 @@ function setCheckoutPaid(order) {
   setCheckoutNotice(`
     <div class="checkout-state success">
       <strong>支付已确认，账号密码已发送到邮箱。</strong>
-      <span>如果邮件没有立即收到，可以稍后用订单查询查看交付结果。</span>
+      <span>如果邮件没有立即收到，请先检查垃圾邮件，或点击右下角客服按钮联系我们。</span>
     </div>
   `);
-  if (order.delivery_result) {
+  if (order.delivery_result && $("#lookupResult")) {
     $("#lookupResult").innerHTML = renderOrderCard(order);
   }
   showToast("支付已确认，已自动发货");
@@ -453,6 +441,7 @@ function startEzbotiWatcher(order, paymentWindow) {
 
 function renderPayAction(order) {
   const area = $("#payActionArea");
+  if (!area) return;
   if (order.mock_payment) {
     area.innerHTML = `
       <button id="mockPayNowBtn" class="button primary wide" type="button">模拟支付成功</button>
@@ -462,8 +451,8 @@ function renderPayAction(order) {
       const paid = await request(`/payments/mock/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
         method: "POST",
       });
-      $("#createdPayStatus").textContent = paid.pay_status;
-      if (paid.delivery_result) {
+      if ($("#createdPayStatus")) $("#createdPayStatus").textContent = paid.pay_status;
+      if (paid.delivery_result && $("#lookupResult")) {
         $("#lookupResult").innerHTML = renderOrderCard(paid);
       }
       await loadConfig();
@@ -486,8 +475,8 @@ function renderPayAction(order) {
         const checked = await request(`/payments/ezboti/sync/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
           method: "POST",
         });
-        $("#createdPayStatus").textContent = checked.pay_status;
-        if (checked.delivery_result) {
+        if ($("#createdPayStatus")) $("#createdPayStatus").textContent = checked.pay_status;
+        if (checked.delivery_result && $("#lookupResult")) {
           $("#lookupResult").innerHTML = renderOrderCard(checked);
         }
         await loadConfig();
@@ -864,6 +853,17 @@ function setupAdminEvents() {
   });
 }
 
+function setupSupportWidget() {
+  const button = $("#supportToggle");
+  const card = $("#supportCard");
+  if (!button || !card) return;
+  button.addEventListener("click", () => {
+    const nextOpen = card.hidden;
+    card.hidden = !nextOpen;
+    button.setAttribute("aria-expanded", String(nextOpen));
+  });
+}
+
 function route() {
   const path = location.pathname;
   if (state.config && path === state.config.adminPanelPath) {
@@ -897,7 +897,8 @@ async function boot() {
     }
   });
   $("#orderForm").addEventListener("submit", handleOrderSubmit);
-  $("#lookupForm").addEventListener("submit", handleLookup);
+  $("#lookupForm")?.addEventListener("submit", handleLookup);
+  setupSupportWidget();
   setupAdminEvents();
   route();
 }

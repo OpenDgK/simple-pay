@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260513-2" />
-    <script defer src="/config.js?v=20260513-2"></script>
-    <script defer src="/app.js?v=20260513-2"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260513-3" />
+    <script defer src="/config.js?v=20260513-3"></script>
+    <script defer src="/app.js?v=20260513-3"></script>
   </head>
   <body>
     <div class="page">
@@ -22,8 +22,8 @@
                   <span>当前商品价格</span>
                 </div>
                 <div class="stat">
-                  <strong>免登录</strong>
-                  <span>订单号 + 查询码查看结果</span>
+                  <strong>邮箱发货</strong>
+                  <span>确认收款后自动发送</span>
                 </div>
                 <div class="stat">
                   <strong>微信/支付宝</strong>
@@ -33,7 +33,7 @@
               <div class="feature-stack">
                 <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature1">下单后自动生成订单号</span></div>
                 <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature2">支持微信 / 支付宝支付</span></div>
-                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature3">交付结果可在线查询</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature3">确认后 10 分钟内发货</span></div>
               </div>
             </div>
 
@@ -41,7 +41,7 @@
               <form id="orderForm" class="order-form hero-card" enctype="multipart/form-data">
                 <div class="section-title">
                   <h2 id="order">立即下单</h2>
-                  <p>选择商品并填写邮箱，支付后请保存订单号和查询码。</p>
+                  <p>选择商品并填写邮箱，确认收款后账号密码会发送到邮箱。</p>
                 </div>
                 <fieldset class="product-fieldset">
                   <legend>选择商品</legend>
@@ -55,23 +55,6 @@
                 <div id="checkoutNotice" class="checkout-notice" hidden></div>
               </form>
             </div>
-          </section>
-
-          <section id="paymentResult" class="panel result-panel" hidden>
-            <div class="section-title">
-              <h2>订单已生成</h2>
-              <p>请保存下面的信息，后续查询交付结果会用到。</p>
-            </div>
-            <dl class="order-meta">
-              <div><dt>订单号</dt><dd id="createdOrderNo">-</dd></div>
-              <div><dt>查询码</dt><dd id="createdQueryCode">-</dd></div>
-              <div><dt>支付状态</dt><dd id="createdPayStatus">pending</dd></div>
-            </dl>
-            <div class="token-box">
-              <span>查询链接</span>
-              <code id="createdTokenUrl">-</code>
-            </div>
-            <div id="payActionArea" class="pay-action"></div>
           </section>
 
           <section id="flow" class="steps-section">
@@ -88,57 +71,16 @@
               <article class="step-card">
                 <span class="step-number">2</span>
                 <h3 id="step2Title">填写邮箱</h3>
-                <p id="step2Body">只需要提供邮箱，用于接收和查询订单信息。</p>
+                <p id="step2Body">只需要提供邮箱，用于接收账号和密码。</p>
               </article>
               <article class="step-card">
                 <span class="step-number">3</span>
-                <h3 id="step3Title">查询交付</h3>
-                <p id="step3Body">管理员交付后，可用订单号和查询码查看结果。</p>
+                <h3 id="step3Title">等待发货</h3>
+                <p id="step3Body">管理员确认收款后，账号密码会发送到你填写的邮箱。</p>
               </article>
             </div>
           </section>
 
-          <section class="workband">
-            <section id="lookup" class="panel lookup-panel">
-              <div class="section-title">
-                <h2 id="lookupTitle">查询交付</h2>
-                <p id="lookupIntro">输入订单号和查询码，或打开一次性 token 链接。</p>
-              </div>
-              <form id="lookupForm" class="compact-form">
-                <label>
-                  订单号
-                  <input name="order_no" type="text" placeholder="SOP..." required />
-                </label>
-                <label>
-                  查询码
-                  <input name="query_code" type="text" placeholder="10 位查询码" required />
-                </label>
-                <button class="button secondary wide" type="submit">立即查询</button>
-              </form>
-              <div id="lookupResult" class="lookup-result"></div>
-            </section>
-
-            <section class="panel faq-panel">
-              <div class="section-title">
-                <h2 id="faqTitle">购买说明</h2>
-                <p id="faqIntro">下单前可以先确认支付、查询和交付方式。</p>
-              </div>
-              <div class="faq-grid">
-                <article class="faq-card">
-                  <h3 id="faq1Title">需要注册吗？</h3>
-                  <p id="faq1Body">不需要。支付后请保存订单号、查询码和查询链接。</p>
-                </article>
-                <article class="faq-card">
-                  <h3 id="faq2Title">怎么查询结果？</h3>
-                  <p id="faq2Body">使用订单号和查询码，或打开系统生成的查询链接。</p>
-                </article>
-                <article class="faq-card">
-                  <h3 id="faq3Title">支持哪些支付？</h3>
-                  <p id="faq3Body">后台已预留微信和支付宝支付接入，测试环境可使用 Mock 支付。</p>
-                </article>
-              </div>
-            </section>
-          </section>
         </section>
 
         <section id="tokenView" class="view">
@@ -354,7 +296,7 @@
                   <form id="contentForm" class="panel admin-section stack-form">
                     <div class="section-title">
                       <h2>前台文案</h2>
-                      <p>首页卖点、流程和查询区文字都可以在这里改。</p>
+                      <p>首页卖点和购买流程文字都可以在这里改。</p>
                     </div>
                     <label>顶部标签<input name="heroBadge" type="text" /></label>
                     <label>卖点 1<input name="feature1" type="text" /></label>
@@ -368,16 +310,6 @@
                     <label>步骤 2 内容<textarea name="step2Body" rows="2"></textarea></label>
                     <label>步骤 3 标题<input name="step3Title" type="text" /></label>
                     <label>步骤 3 内容<textarea name="step3Body" rows="2"></textarea></label>
-                    <label>查询标题<input name="lookupTitle" type="text" /></label>
-                    <label>查询说明<textarea name="lookupIntro" rows="2"></textarea></label>
-                    <label>说明标题<input name="faqTitle" type="text" /></label>
-                    <label>说明副标题<textarea name="faqIntro" rows="2"></textarea></label>
-                    <label>说明 1 标题<input name="faq1Title" type="text" /></label>
-                    <label>说明 1 内容<textarea name="faq1Body" rows="2"></textarea></label>
-                    <label>说明 2 标题<input name="faq2Title" type="text" /></label>
-                    <label>说明 2 内容<textarea name="faq2Body" rows="2"></textarea></label>
-                    <label>说明 3 标题<input name="faq3Title" type="text" /></label>
-                    <label>说明 3 内容<textarea name="faq3Body" rows="2"></textarea></label>
                     <button class="button primary wide" type="submit">保存前台文案</button>
                   </form>
                 </section>
@@ -386,6 +318,17 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <div class="support-widget">
+      <button id="supportToggle" class="support-toggle" type="button" aria-expanded="false" aria-controls="supportCard">
+        <span class="support-icon" aria-hidden="true">?</span>
+        <span>客服</span>
+      </button>
+      <div id="supportCard" class="support-card" hidden>
+        <strong>联系客服</strong>
+        <a href="mailto:openkai29@gmail.com">openkai29@gmail.com</a>
+      </div>
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
