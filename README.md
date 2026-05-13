@@ -274,6 +274,42 @@ XUNHUPAY_PLUGINS=simple-order-pay
 
 真实支付必须使用公网 HTTPS 回调地址，本地 `127.0.0.1` 无法接收虎皮椒服务器回调。本地开发继续使用 `PAYMENT_MODE=mock`。
 
+## 配置艺爪付费
+
+艺爪付费 API 文档入口：https://www.ezboti.com/docs/revenue/api/
+
+它不是传统的 `notify_url` 支付网关，而是托管付费页面和权益查询 API。本项目接入方式是：
+
+1. 用户在本站下单，系统生成订单并锁定一条库存。
+2. 后端用 `customer.info` 创建或查询艺爪客户，并拿到 `home_link.url`。
+3. 用户跳转到艺爪付费页面付款。
+4. 用户回到本站后点击“我已支付，检查支付状态”。
+5. 后端再次调用 `customer.info`，检测 `balance_s` 里是否有已付费且可用的权益。
+6. 检测成功后订单变成 `paid`，系统自动扣库存、写交付结果并发送邮件。
+
+`.env` 示例：
+
+```env
+PAYMENT_MODE=ezboti
+EZBOTI_API_URL=https://revenue.ezboti.com/api/v1/server
+EZBOTI_PROJECT_ID=你的项目ID
+EZBOTI_PROJECT_SECRET=你的项目密钥
+EZBOTI_PAYWALL_ID=你的付费墙ID
+EZBOTI_PAYWALL_ALIAS=
+EZBOTI_EQUITY_ID=
+EZBOTI_EQUITY_ALIAS=
+EZBOTI_REQUIRE_CHARGED=true
+EZBOTI_REQUIRE_USABLE=true
+```
+
+`PROJECT_ID` 和 `PROJECT_SECRET` 在艺爪项目后台 API/开发配置里获取；`PAYWALL_ID` 或 `PAYWALL_ALIAS` 在付费墙配置里获取。多商品场景建议在艺爪后台给不同商品配置明确权益，并在本站配置 `EZBOTI_EQUITY_ID` 或 `EZBOTI_EQUITY_ALIAS`，避免用户购买了不对应的权益也触发发货。
+
+后端封装在 `backend/app/ezboti.py`，公开同步接口是：
+
+```text
+POST /api/payments/ezboti/sync/{order_no}?query_code=...
+```
+
 ## 管理后台
 
 默认后台路径：
@@ -467,6 +503,7 @@ db/schema.sql
 - `POST /api/payments/alipay/notify`
 - `POST /api/payments/daxpay/notify`
 - `POST /api/payments/xunhupay/notify`
+- `POST /api/payments/ezboti/sync/{order_no}?query_code=...`
 - `POST /api/payments/mock/{order_no}?query_code=...`
 
 后台：

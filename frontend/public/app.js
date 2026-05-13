@@ -240,7 +240,23 @@ function renderPayAction(order) {
     return;
   }
   if (order.pay_body && /^https?:\/\//i.test(order.pay_body)) {
-    area.innerHTML = `<a class="button primary wide" href="${escapeHtml(order.pay_body)}" target="_blank" rel="noopener">前往支付页面</a>`;
+    area.innerHTML = `
+      <a class="button primary wide" href="${escapeHtml(order.pay_body)}" target="_blank" rel="noopener">前往支付页面</a>
+      ${order.pay_channel === "ezboti" ? `<button id="ezbotiSyncPayBtn" class="button quiet wide" type="button">我已支付，检查支付状态</button>` : ""}
+    `;
+    if (order.pay_channel === "ezboti") {
+      $("#ezbotiSyncPayBtn").addEventListener("click", async () => {
+        const checked = await request(`/payments/ezboti/sync/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
+          method: "POST",
+        });
+        $("#createdPayStatus").textContent = checked.pay_status;
+        if (checked.delivery_result) {
+          $("#lookupResult").innerHTML = renderOrderCard(checked);
+        }
+        await loadConfig();
+        showToast(checked.pay_status === "paid" ? "支付已确认，已自动发货" : "暂未检测到支付成功，请稍后再试");
+      });
+    }
     return;
   }
   area.innerHTML = `

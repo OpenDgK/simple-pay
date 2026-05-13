@@ -21,6 +21,7 @@ from .config import settings
 from .daxpay import FAILED_STATUSES, PAID_STATUSES, DaxPayClient, verify_signed_payload
 from .db import get_db, init_db, wait_for_database
 from .email_service import send_account_delivery_email
+from .ezboti import EzbotiClient
 from .models import AppSetting, InventoryItem, Order, PaymentEvent, Product
 from .schemas import (
     AdminLoginRequest,
@@ -346,6 +347,7 @@ def _order_to_public(order: Order, *, include_contact: bool = True) -> dict[str,
         "amount_text": _amount_text(order.amount_cents),
         "currency": order.currency,
         "pay_status": order.pay_status,
+        "pay_channel": order.pay_channel,
         "delivery_status": order.delivery_status,
         "delivery_result": order.delivery_result,
         "has_upload": bool(order.stored_filename),
@@ -523,6 +525,14 @@ async def create_order(
             order.daxpay_order_no = created.xunhupay_order_no
             order.pay_body = created.pay_body
             order.pay_channel = "xunhupay"
+        elif settings.payment_mode == "ezboti":
+            created = await EzbotiClient().customer_info(
+                external_id=order.order_no,
+                nickname=order.contact,
+            )
+            order.daxpay_order_no = created.customer_id
+            order.pay_body = created.pay_url
+            order.pay_channel = "ezboti"
         else:
             created = await DaxPayClient().create_payment(
                 order_no=order.order_no,
@@ -593,6 +603,45 @@ def mock_pay(order_no: str, query_code: str = Query(...), db: Session = Depends(
         signature_valid=1,
     )
     db.add(event)
+    db.commit()
+    db.refresh(order)
+    return _order_to_public(order)
+
+
+@app.post("/api/payments/ezboti/sync/{order_no}")
+async def ezboti_sync_payment(
+    order_no: str,
+    query_code: str = Query(...),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    if settings.payment_mode != "ezboti":
+        raise HTTPException(status_code=404, detail="Ezboti payment sync is disabled")
+    order = _find_order_by_lookup(db, order_no, query_code)
+    if order.pay_status == "expired":
+        raise HTTPException(status_code=409, detail="订单库存占用已过期，请重新下单")
+    if order.pay_status == "paid":
+        return _order_to_public(order)
+
+    info = await EzbotiClient().customer_info(external_id=order.order_no, nickname=order.contact)
+    order.daxpay_order_no = info.customer_id or order.daxpay_order_no
+    order.pay_body = info.pay_url or order.pay_body
+    order.pay_channel = "ezboti"
+    if info.is_paid:
+        order.pay_status = "paid"
+        order.paid_at = order.paid_at or datetime.now()
+        _fulfill_paid_order(db, order)
+        event_type = "ezboti_sync_paid"
+    else:
+        order.pay_status = "pending"
+        event_type = "ezboti_sync_pending"
+    db.add(
+        PaymentEvent(
+            order=order,
+            event_type=event_type,
+            raw_payload=json.dumps(info.raw, ensure_ascii=False),
+            signature_valid=1,
+        )
+    )
     db.commit()
     db.refresh(order)
     return _order_to_public(order)
