@@ -312,7 +312,7 @@ function renderManualCheckout(order) {
     setCheckoutNotice(`
       <div class="checkout-state warning">
         <strong>已提交，等待管理员确认收款。</strong>
-        <span>确认到账后，账号密码会自动发送到你的邮箱。请保存订单号和查询码。</span>
+        <span>管理员会尽快核对收款，10 分钟内发货。账号密码会自动发送到你的邮箱，请保存订单号和查询码。</span>
         <div class="manual-payment-meta">
           <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
           <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>

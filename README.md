@@ -290,8 +290,8 @@ XUNHUPAY_PLUGINS=simple-order-pay
 ```env
 PAYMENT_MODE=manual
 MANUAL_PAYMENT_QR_URL=https://你的域名/path/to/pay-qr.png
-MANUAL_PAYMENT_INSTRUCTIONS=请扫码付款，付款后点击“我已付款，等待确认”。管理员确认到账后会自动发货。
-ADMIN_NOTIFY_EMAIL=你的收款核对邮箱
+MANUAL_PAYMENT_INSTRUCTIONS=请扫码付款，付款后点击“我已付款，等待确认”。管理员会核对收款，10 分钟内发货。
+ADMIN_NOTIFY_EMAIL=1159624528@qq.com
 ```
 
 这种模式没有支付平台自动回调，所以不要在后台确认到账前把订单改为 `paid`。如果配置了 `ADMIN_NOTIFY_EMAIL` 和 SMTP，用户点击“我已付款，等待确认”后，系统会给管理员发一封待核对邮件。
