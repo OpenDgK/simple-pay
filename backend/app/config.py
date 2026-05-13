@@ -43,6 +43,7 @@ class Settings:
     admin_password: str = _getenv("ADMIN_PASSWORD", "")
     admin_panel_path: str = _getenv("ADMIN_PANEL_PATH", "/ops-7q4-panel")
     admin_api_prefix: str = _getenv("ADMIN_API_PREFIX", "/api/order-ops-7q4")
+    admin_notify_email: str = _getenv("ADMIN_NOTIFY_EMAIL", _getenv("SMTP_FROM", ""))
 
     mysql_host: str = _getenv("MYSQL_HOST", "mysql")
     mysql_port: int = _get_int("MYSQL_PORT", 3306)

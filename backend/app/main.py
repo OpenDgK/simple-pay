@@ -20,7 +20,7 @@ from .alipay import ALIPAY_FAILED_STATUSES, ALIPAY_PAID_STATUSES, AlipayClient, 
 from .config import settings
 from .daxpay import FAILED_STATUSES, PAID_STATUSES, DaxPayClient, verify_signed_payload
 from .db import get_db, init_db, wait_for_database
-from .email_service import send_account_delivery_email
+from .email_service import send_account_delivery_email, send_manual_payment_review_email
 from .ezboti import EzbotiClient
 from .models import AppSetting, InventoryItem, Order, PaymentEvent, Product
 from .schemas import (
@@ -672,11 +672,25 @@ def manual_payment_submit(
     if order.pay_status in {"pending", "failed"}:
         order.pay_status = "reviewing"
         order.payment_error = None
+        notify_error = None
+        if settings.admin_notify_email:
+            try:
+                send_manual_payment_review_email(
+                    to_email=settings.admin_notify_email,
+                    order_no=order.order_no,
+                    contact=order.contact,
+                    product_name=order.product_name,
+                    amount_text=_amount_text(order.amount_cents),
+                    currency=order.currency,
+                    admin_url=f"{settings.public_base_url}{settings.admin_panel_path}",
+                )
+            except Exception as exc:
+                notify_error = str(exc)
         db.add(
             PaymentEvent(
                 order=order,
                 event_type="manual_payment_submitted",
-                raw_payload=json.dumps({"order_no": order_no}, ensure_ascii=False),
+                raw_payload=json.dumps({"order_no": order_no, "notify_error": notify_error}, ensure_ascii=False),
                 signature_valid=1,
             )
         )
