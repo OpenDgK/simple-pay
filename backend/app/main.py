@@ -533,6 +533,15 @@ async def create_order(
             order.daxpay_order_no = created.customer_id
             order.pay_body = created.pay_url
             order.pay_channel = "ezboti"
+        elif settings.payment_mode == "manual":
+            order.pay_body = json.dumps(
+                {
+                    "qr_url": settings.manual_payment_qr_url,
+                    "instructions": settings.manual_payment_instructions,
+                },
+                ensure_ascii=False,
+            )
+            order.pay_channel = "manual"
         else:
             created = await DaxPayClient().create_payment(
                 order_no=order.order_no,
@@ -642,6 +651,35 @@ async def ezboti_sync_payment(
             signature_valid=1,
         )
     )
+    db.commit()
+    db.refresh(order)
+    return _order_to_public(order)
+
+
+@app.post("/api/payments/manual/{order_no}")
+def manual_payment_submit(
+    order_no: str,
+    query_code: str = Query(...),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    if settings.payment_mode != "manual":
+        raise HTTPException(status_code=404, detail="Manual payment is disabled")
+    order = _find_order_by_lookup(db, order_no, query_code)
+    if order.pay_status == "expired":
+        raise HTTPException(status_code=409, detail="订单库存占用已过期，请重新下单")
+    if order.pay_status == "paid":
+        return _order_to_public(order)
+    if order.pay_status in {"pending", "failed"}:
+        order.pay_status = "reviewing"
+        order.payment_error = None
+        db.add(
+            PaymentEvent(
+                order=order,
+                event_type="manual_payment_submitted",
+                raw_payload=json.dumps({"order_no": order_no}, ensure_ascii=False),
+                signature_valid=1,
+            )
+        )
     db.commit()
     db.refresh(order)
     return _order_to_public(order)
@@ -1046,8 +1084,22 @@ def update_delivery(order_no: str, payload: DeliveryUpdateRequest, db: Session =
     order = db.scalar(select(Order).where(Order.order_no == order_no))
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order.delivery_status = payload.delivery_status
-    order.delivery_result = payload.delivery_result
+    auto_fulfilled = False
+    if payload.pay_status:
+        if payload.pay_status == "paid":
+            order.pay_status = "paid"
+            order.paid_at = order.paid_at or datetime.now()
+            _fulfill_paid_order(db, order)
+            auto_fulfilled = True
+        elif payload.pay_status == "failed":
+            order.pay_status = "failed"
+            _release_inventory_for_order(order)
+        else:
+            order.pay_status = payload.pay_status
+
+    if not auto_fulfilled or payload.delivery_result:
+        order.delivery_status = payload.delivery_status
+        order.delivery_result = payload.delivery_result
     db.commit()
     db.refresh(order)
     return _order_to_admin(order)

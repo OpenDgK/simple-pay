@@ -274,6 +274,27 @@ XUNHUPAY_PLUGINS=simple-order-pay
 
 真实支付必须使用公网 HTTPS 回调地址，本地 `127.0.0.1` 无法接收虎皮椒服务器回调。本地开发继续使用 `PAYMENT_MODE=mock`。
 
+## 配置人工确认收款
+
+如果你想使用自己的支付宝/微信收款码，并且不想让用户填写支付宝订单号，可以使用人工确认模式：
+
+1. 用户在本站选择商品并填写邮箱。
+2. 前台直接展示你的收款码、订单号、查询码和金额。
+3. 用户付款后点击“我已付款，等待确认”。
+4. 订单支付状态变为 `reviewing`，库存继续锁定。
+5. 管理员后台核对到账后，把支付状态改为 `paid` 并保存。
+6. 系统自动扣库存、写入交付结果并发送账号密码邮件。
+
+`.env` 示例：
+
+```env
+PAYMENT_MODE=manual
+MANUAL_PAYMENT_QR_URL=https://你的域名/path/to/pay-qr.png
+MANUAL_PAYMENT_INSTRUCTIONS=请扫码付款，付款后点击“我已付款，等待确认”。管理员确认到账后会自动发货。
+```
+
+这种模式没有支付平台自动回调，所以不要在后台确认到账前把订单改为 `paid`。
+
 ## 配置艺爪付费
 
 艺爪付费 API 文档入口：https://www.ezboti.com/docs/revenue/api/
@@ -336,6 +357,7 @@ ADMIN_API_PREFIX=/api/order-ops-7q4
 
 - 查看订单号、邮箱、商品、支付状态、交付状态。
 - 手动填写交付结果。
+- 修改支付状态：`pending`、`reviewing`、`paid`、`failed`。人工确认收款时，确认到账后改为 `paid` 会自动发货并发送邮件。
 - 修改交付状态：`pending`、`processing`、`delivered`、`cancelled`。
 - 配置多个商品、每个商品的价格、是否前台展示和排序。
 - 批量导入账号库存；每行一个账号和密码。
@@ -511,6 +533,7 @@ db/schema.sql
 - `POST /api/payments/daxpay/notify`
 - `POST /api/payments/xunhupay/notify`
 - `POST /api/payments/ezboti/sync/{order_no}?query_code=...`
+- `POST /api/payments/manual/{order_no}?query_code=...`
 - `POST /api/payments/mock/{order_no}?query_code=...`
 - `POST /api/orders/{order_no}/cancel?query_code=...`
 

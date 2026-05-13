@@ -208,6 +208,7 @@
                     <select id="adminPayStatus">
                       <option value="">支付状态</option>
                       <option value="pending">pending</option>
+                      <option value="reviewing">reviewing</option>
                       <option value="paid">paid</option>
                       <option value="failed">failed</option>
                     </select>
@@ -245,6 +246,15 @@
                     <h2>交付结果</h2>
                     <p id="selectedOrderTitle">选择一个订单后编辑。</p>
                   </div>
+                  <label>
+                    支付状态
+                    <select name="pay_status">
+                      <option value="pending">pending</option>
+                      <option value="reviewing">reviewing</option>
+                      <option value="paid">paid</option>
+                      <option value="failed">failed</option>
+                    </select>
+                  </label>
                   <label>
                     交付状态
                     <select name="delivery_status">

@@ -203,7 +203,7 @@ function renderOrderCard(order) {
 async function handleOrderSubmit(event) {
   event.preventDefault();
   const button = $("#submitOrderBtn");
-  const shouldOpenPopup = state.config?.paymentMode && state.config.paymentMode !== "mock";
+  const shouldOpenPopup = state.config?.paymentMode && !["mock", "manual"].includes(state.config.paymentMode);
   const paymentWindow = shouldOpenPopup ? window.open("about:blank", "simple_order_pay_payment") : null;
   button.disabled = true;
   button.textContent = "正在创建订单...";
@@ -221,7 +221,7 @@ async function handleOrderSubmit(event) {
     });
     launchCheckout(data, paymentWindow);
     await loadConfig();
-    showToast(data.mock_payment ? "订单已生成，可进行本地测试" : "支付窗口已打开");
+    showToast(data.mock_payment ? "订单已生成，可进行本地测试" : data.pay_channel === "manual" ? "请扫码付款，付款后提交确认" : "支付窗口已打开");
   } catch (error) {
     if (paymentWindow && !paymentWindow.closed) {
       paymentWindow.close();
@@ -236,6 +236,10 @@ function launchCheckout(order, paymentWindow) {
   clearCheckoutTimer();
   if (order.mock_payment) {
     renderMockCheckout(order);
+    return;
+  }
+  if (order.pay_channel === "manual") {
+    renderManualCheckout(order);
     return;
   }
 
@@ -271,6 +275,54 @@ function launchCheckout(order, paymentWindow) {
     });
     startEzbotiWatcher(order, paymentWindow);
   }
+}
+
+function parsePaymentPayload(order) {
+  try {
+    return JSON.parse(order.pay_body || "{}");
+  } catch {
+    return { instructions: order.pay_body || "" };
+  }
+}
+
+function renderManualCheckout(order) {
+  const payload = parsePaymentPayload(order);
+  const qr = payload.qr_url
+    ? `<img class="payment-qr" src="${escapeHtml(payload.qr_url)}" alt="收款码" />`
+    : `<div class="empty-state">收款码未配置，请联系管理员。</div>`;
+  setCheckoutNotice(`
+    <div class="checkout-state manual">
+      <strong>扫码付款后等待人工确认</strong>
+      <span>${escapeHtml(payload.instructions || "请扫码付款，付款后点击下方按钮。")}</span>
+      <div class="manual-payment-box">
+        ${qr}
+        <div class="manual-payment-meta">
+          <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
+          <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
+          <p><strong>金额：</strong>${escapeHtml(order.amount_text)} ${escapeHtml(order.currency)}</p>
+        </div>
+      </div>
+      <button id="manualPaidBtn" class="button primary wide" type="button">我已付款，等待确认</button>
+    </div>
+  `);
+  $("#manualPaidBtn").addEventListener("click", async () => {
+    const reviewing = await request(`/payments/manual/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
+      method: "POST",
+    });
+    setCheckoutNotice(`
+      <div class="checkout-state warning">
+        <strong>已提交，等待管理员确认收款。</strong>
+        <span>确认到账后，账号密码会自动发送到你的邮箱。请保存订单号和查询码。</span>
+        <div class="manual-payment-meta">
+          <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
+          <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
+        </div>
+      </div>
+    `);
+    $("#lookupResult").innerHTML = renderOrderCard(reviewing);
+    await loadConfig();
+    showToast("已提交付款确认，等待管理员处理");
+  });
 }
 
 function renderMockCheckout(order) {
@@ -514,6 +566,7 @@ async function selectOrder(orderNo) {
   $("#deliveryForm").hidden = false;
   $("#selectedOrderTitle").textContent = `${order.order_no} · ${order.contact}`;
   const form = $("#deliveryForm");
+  form.pay_status.value = order.pay_status;
   form.delivery_status.value = order.delivery_status;
   form.delivery_result.value = order.delivery_result || "";
 }
@@ -527,6 +580,7 @@ async function handleDeliverySave(event) {
     admin: true,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      pay_status: form.pay_status.value,
       delivery_status: form.delivery_status.value,
       delivery_result: form.delivery_result.value,
     }),

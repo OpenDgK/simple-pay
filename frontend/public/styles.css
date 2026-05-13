@@ -647,6 +647,7 @@ code {
 }
 
 .status.pending,
+.status.reviewing,
 .status.processing,
 .status.reserved {
   color: #b45309;
@@ -720,6 +721,36 @@ code {
 .checkout-state.warning {
   border-color: rgba(180, 83, 9, 0.24);
   background: #fffbeb;
+}
+
+.manual-payment-box {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.payment-qr {
+  width: 180px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  object-fit: contain;
+  padding: 10px;
+}
+
+.manual-payment-meta {
+  display: grid;
+  gap: 6px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.manual-payment-meta p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .single-column {
@@ -1007,7 +1038,8 @@ tbody tr:hover {
   }
 
   .product-options .product-card,
-  .form-grid {
+  .form-grid,
+  .manual-payment-box {
     grid-template-columns: 1fr;
   }
 

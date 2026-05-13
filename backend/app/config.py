@@ -64,6 +64,12 @@ class Settings:
 
     payment_mode: str = _getenv("PAYMENT_MODE", "mock").lower()
 
+    manual_payment_qr_url: str = _getenv("MANUAL_PAYMENT_QR_URL", "")
+    manual_payment_instructions: str = _getenv(
+        "MANUAL_PAYMENT_INSTRUCTIONS",
+        "请扫码付款，付款后点击“我已付款，等待确认”。管理员确认到账后会自动发货。",
+    )
+
     alipay_gateway_url: str = _getenv("ALIPAY_GATEWAY_URL", "https://openapi.alipay.com/gateway.do").rstrip("/")
     alipay_app_id: str = _getenv("ALIPAY_APP_ID", "")
     alipay_app_private_key: str = _getenv("ALIPAY_APP_PRIVATE_KEY", "")
