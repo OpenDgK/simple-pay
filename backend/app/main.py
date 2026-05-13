@@ -23,6 +23,7 @@ from .db import get_db, init_db, wait_for_database
 from .email_service import send_account_delivery_email, send_manual_payment_review_email
 from .ezboti import EzbotiClient
 from .models import AppSetting, InventoryItem, Order, PaymentEvent, Product
+from .pay188 import PAY188_FAILED_STATUSES, PAY188_PAID_STATUSES, Pay188Client, verify_pay188_callback
 from .schemas import (
     AdminLoginRequest,
     DeliveryUpdateRequest,
@@ -515,6 +516,15 @@ async def create_order(
             order.daxpay_order_no = created.xunhupay_order_no
             order.pay_body = created.pay_body
             order.pay_channel = "xunhupay"
+        elif settings.payment_mode == "pay188":
+            created = await Pay188Client().create_payment(
+                order_no=order.order_no,
+                title=product.name,
+                amount=_amount_yuan(product.amount_cents),
+            )
+            order.daxpay_order_no = created.pay188_order_no
+            order.pay_body = created.pay_body
+            order.pay_channel = settings.pay188_payment_method
         elif settings.payment_mode == "ezboti":
             created = await EzbotiClient().customer_info(
                 external_id=order.order_no,
@@ -899,6 +909,90 @@ async def xunhupay_notify(request: Request, db: Session = Depends(get_db)) -> Pl
         PaymentEvent(
             order=order,
             event_type="xunhupay_notify",
+            raw_payload=json.dumps(payload, ensure_ascii=False),
+            signature_valid=1,
+        )
+    )
+    db.commit()
+    return PlainTextResponse("success")
+
+
+@app.post("/api/payments/pay188/notify")
+async def pay188_notify(request: Request, db: Session = Depends(get_db)) -> PlainTextResponse:
+    try:
+        payload = await request.json()
+    except Exception:
+        form = await request.form()
+        payload = {key: str(value) for key, value in form.items()}
+    if not isinstance(payload, dict):
+        return PlainTextResponse("fail", status_code=400)
+    payload = {str(key): value for key, value in payload.items()}
+
+    if not verify_pay188_callback(payload, settings.pay188_secret_key):
+        return PlainTextResponse("fail", status_code=400)
+    if payload.get("merchantId") and str(payload.get("merchantId")) != settings.pay188_merchant_id:
+        return PlainTextResponse("fail", status_code=400)
+
+    order_no = (
+        payload.get("merchantOrderId")
+        or payload.get("out_trade_no")
+        or payload.get("outTradeNo")
+        or payload.get("trade_order_id")
+        or payload.get("attach")
+    )
+    if not order_no:
+        return PlainTextResponse("fail", status_code=400)
+    order = db.scalar(select(Order).where(Order.order_no == str(order_no)))
+    if not order:
+        return PlainTextResponse("fail", status_code=404)
+
+    amount_value = payload.get("amount") or payload.get("money") or payload.get("total_fee") or payload.get("paidAmount")
+    if amount_value is not None and str(amount_value).strip() != "":
+        try:
+            paid_amount = Decimal(str(amount_value)).quantize(Decimal("0.01"))
+        except Exception:
+            return PlainTextResponse("fail", status_code=400)
+        if paid_amount != _amount_yuan(order.amount_cents):
+            db.add(
+                PaymentEvent(
+                    order=order,
+                    event_type="pay188_notify_amount_mismatch",
+                    raw_payload=json.dumps(payload, ensure_ascii=False),
+                    signature_valid=1,
+                )
+            )
+            db.commit()
+            return PlainTextResponse("fail", status_code=400)
+
+    status_text = str(
+        payload.get("status")
+        or payload.get("trade_status")
+        or payload.get("pay_status")
+        or payload.get("state")
+        or "success"
+    ).lower()
+    if status_text in PAY188_PAID_STATUSES:
+        order.pay_status = "paid"
+        order.paid_at = order.paid_at or datetime.now()
+        _fulfill_paid_order(db, order)
+    elif status_text in PAY188_FAILED_STATUSES:
+        order.pay_status = "failed"
+        _release_inventory_for_order(order)
+    else:
+        order.pay_status = "pending"
+    order.daxpay_order_no = (
+        payload.get("orderId")
+        or payload.get("payOrderId")
+        or payload.get("transactionId")
+        or payload.get("trade_no")
+        or order.daxpay_order_no
+    )
+    order.pay_channel = str(payload.get("paymentMethod") or payload.get("coinType") or order.pay_channel or "pay188")
+
+    db.add(
+        PaymentEvent(
+            order=order,
+            event_type="pay188_notify",
             raw_payload=json.dumps(payload, ensure_ascii=False),
             signature_valid=1,
         )

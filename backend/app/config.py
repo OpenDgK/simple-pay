@@ -102,6 +102,15 @@ class Settings:
     xunhupay_plugins: str = _getenv("XUNHUPAY_PLUGINS", "simple-order-pay")
     xunhupay_request_timeout_seconds: int = _get_int("XUNHUPAY_REQUEST_TIMEOUT_SECONDS", 15)
 
+    pay188_gateway_url: str = _getenv("PAY188_GATEWAY_URL", "https://api2.188pay.top/submit.php").rstrip("/")
+    pay188_merchant_id: str = _getenv("PAY188_MERCHANT_ID", "")
+    pay188_secret_key: str = _getenv("PAY188_SECRET_KEY", "")
+    pay188_payment_method: str = _getenv("PAY188_PAYMENT_METHOD", "fiat_alipay")
+    pay188_coin_type: str = _getenv("PAY188_COIN_TYPE", "")
+    pay188_notify_url: str = _getenv("PAY188_NOTIFY_URL", "")
+    pay188_return_url: str = _getenv("PAY188_RETURN_URL", "")
+    pay188_request_timeout_seconds: int = _get_int("PAY188_REQUEST_TIMEOUT_SECONDS", 15)
+
     ezboti_api_url: str = _getenv("EZBOTI_API_URL", "https://revenue.ezboti.com/api/v1/server").rstrip("/")
     ezboti_project_id: str = _getenv("EZBOTI_PROJECT_ID", "")
     ezboti_project_secret: str = _getenv("EZBOTI_PROJECT_SECRET", "")
@@ -195,6 +204,18 @@ class Settings:
     def effective_xunhupay_return_url(self) -> str:
         if self.xunhupay_return_url:
             return self.xunhupay_return_url
+        return f"{self.public_base_url}/"
+
+    @property
+    def effective_pay188_notify_url(self) -> str:
+        if self.pay188_notify_url:
+            return self.pay188_notify_url
+        return f"{self.public_base_url}/api/payments/pay188/notify"
+
+    @property
+    def effective_pay188_return_url(self) -> str:
+        if self.pay188_return_url:
+            return self.pay188_return_url
         return f"{self.public_base_url}/"
 
 

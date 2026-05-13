@@ -274,6 +274,44 @@ XUNHUPAY_PLUGINS=simple-order-pay
 
 真实支付必须使用公网 HTTPS 回调地址，本地 `127.0.0.1` 无法接收虎皮椒服务器回调。本地开发继续使用 `PAYMENT_MODE=mock`。
 
+## 配置 188Pay
+
+188Pay 文档入口：https://www.188pay.top/dashboard/docs
+
+本项目已接入 188Pay 的“标准 JSON 法币下单”方式。按当前文档，公开法币拉起目前写明只支持支付宝链路，参数值是 `fiat_alipay`；如果 188Pay 后台给你的商户额外开通了微信，请把他们提供的微信方法值填到 `PAY188_PAYMENT_METHOD`。
+
+`.env` 示例：
+
+```env
+PAYMENT_MODE=pay188
+PAY188_GATEWAY_URL=https://api2.188pay.top/submit.php
+PAY188_MERCHANT_ID=你的商户ID
+PAY188_SECRET_KEY=你的商户密钥
+PAY188_PAYMENT_METHOD=fiat_alipay
+PAY188_COIN_TYPE=
+PAY188_NOTIFY_URL=https://你的域名/api/payments/pay188/notify
+PAY188_RETURN_URL=https://你的域名/
+PAY188_REQUEST_TIMEOUT_SECONDS=15
+```
+
+188Pay 后台需要先做几件事：
+
+- 在“设置”里补齐联系人、电话、邮箱、Telegram。
+- 在“钱包 / 支付方式”里开通法币支付方式，当前至少开通支付宝。
+- 如果它要求结算地址，按后台提示添加 USDT-TRC20 结算地址。
+- 商户后台登记的网站域名要和 `PAY188_NOTIFY_URL` 的域名一致，例如 `pay.yingkai.shop`。
+
+后端封装在 `backend/app/pay188.py`：
+
+- 创建支付订单：`POST {PAY188_GATEWAY_URL}`
+- 业务订单号：`merchantOrderId`
+- 回调入口：`/api/payments/pay188/notify`
+- 下单签名：按参数名排序后拼接 `&key=商户密钥`，MD5 小写。
+- 回调验签：按参数名排序后拼接 `&key=商户密钥`，MD5 后和回调 `sign` 比对。
+- 回调验签通过后，会把订单状态更新为 `paid`，然后自动扣库存、写入交付结果并发送邮件。
+
+真实支付必须使用公网 HTTPS 回调地址。本地开发继续使用 `PAYMENT_MODE=mock`，不要把本地 `127.0.0.1` 填进 188Pay 后台。
+
 ## 配置人工确认收款
 
 如果你想使用自己的支付宝/微信收款码，并且不想让用户填写支付宝订单号，可以使用人工确认模式：
@@ -533,6 +571,7 @@ db/schema.sql
 - `POST /api/payments/alipay/notify`
 - `POST /api/payments/daxpay/notify`
 - `POST /api/payments/xunhupay/notify`
+- `POST /api/payments/pay188/notify`
 - `POST /api/payments/ezboti/sync/{order_no}?query_code=...`
 - `POST /api/payments/manual/{order_no}?query_code=...`
 - `POST /api/payments/mock/{order_no}?query_code=...`
@@ -564,7 +603,7 @@ db/schema.sql
 - `FRONTEND_HOST_PORT`、`BACKEND_HOST_PORT` 未与其他项目冲突。
 - Nginx 只新增 `/etc/nginx/conf.d/simple-order-pay.conf`。
 - HTTPS 证书已配置。
-- 虎皮椒、支付宝或 DaxPay 商户配置、签名方式和回调地址已在对应后台核对。
+- 188Pay、虎皮椒、支付宝或 DaxPay 商户配置、签名方式和回调地址已在对应后台核对。
 
 ## 协作开发上手指南
 
@@ -579,7 +618,7 @@ GitHub: git@github.com:OpenDgK/simple-pay.git
 生产部署目录: /opt/simple-order-pay
 ```
 
-支付方式当前还没有最终确定。代码已经预留 `mock`、`xunhupay`、`alipay`、`daxpay` 四种模式；新员工主要任务可以从支付接入开始，本地开发时先保持 `PAYMENT_MODE=mock`。
+支付方式当前还没有最终确定。代码已经预留 `mock`、`manual`、`pay188`、`xunhupay`、`alipay`、`daxpay`、`ezboti` 多种模式；新员工主要任务可以从支付接入开始，本地开发时先保持 `PAYMENT_MODE=mock`。
 
 ### 项目边界
 
