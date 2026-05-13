@@ -647,6 +647,67 @@ async def ezboti_sync_payment(
     return _order_to_public(order)
 
 
+@app.post("/api/orders/{order_no}/cancel")
+async def cancel_order(
+    order_no: str,
+    query_code: str = Query(...),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    order = _find_order_by_lookup(db, order_no, query_code)
+    if order.pay_status == "paid":
+        return _order_to_public(order)
+    if order.pay_status == "expired":
+        _release_inventory_for_order(order)
+        db.commit()
+        db.refresh(order)
+        return _order_to_public(order)
+
+    if order.pay_channel == "ezboti" and settings.payment_mode == "ezboti":
+        info = await EzbotiClient().customer_info(external_id=order.order_no, nickname=order.contact)
+        order.daxpay_order_no = info.customer_id or order.daxpay_order_no
+        order.pay_body = info.pay_url or order.pay_body
+        if info.is_paid:
+            order.pay_status = "paid"
+            order.paid_at = order.paid_at or datetime.now()
+            _fulfill_paid_order(db, order)
+            db.add(
+                PaymentEvent(
+                    order=order,
+                    event_type="ezboti_cancel_check_paid",
+                    raw_payload=json.dumps(info.raw, ensure_ascii=False),
+                    signature_valid=1,
+                )
+            )
+            db.commit()
+            db.refresh(order)
+            return _order_to_public(order)
+
+        db.add(
+            PaymentEvent(
+                order=order,
+                event_type="ezboti_cancel_check_pending",
+                raw_payload=json.dumps(info.raw, ensure_ascii=False),
+                signature_valid=1,
+            )
+        )
+
+    if order.pay_status == "pending":
+        order.pay_status = "failed"
+        order.payment_error = "用户关闭支付窗口，未检测到支付成功，库存已释放"
+        _release_inventory_for_order(order)
+        db.add(
+            PaymentEvent(
+                order=order,
+                event_type="customer_cancelled",
+                raw_payload=json.dumps({"order_no": order_no}, ensure_ascii=False),
+                signature_valid=1,
+            )
+        )
+    db.commit()
+    db.refresh(order)
+    return _order_to_public(order)
+
+
 @app.post("/api/payments/daxpay/notify")
 async def daxpay_notify(request: Request, db: Session = Depends(get_db)) -> PlainTextResponse:
     payload = await request.json()

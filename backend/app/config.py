@@ -37,7 +37,7 @@ class Settings:
     )
     product_price_cents: int = _get_int("PRODUCT_PRICE_CENTS", 9900)
     product_currency: str = _getenv("PRODUCT_CURRENCY", "CNY")
-    inventory_reservation_minutes: int = _get_int("INVENTORY_RESERVATION_MINUTES", 30)
+    inventory_reservation_minutes: int = _get_int("INVENTORY_RESERVATION_MINUTES", 10)
 
     admin_username: str = _getenv("ADMIN_USERNAME", "admin")
     admin_password: str = _getenv("ADMIN_PASSWORD", "")

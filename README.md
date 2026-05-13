@@ -1,6 +1,6 @@
 # Simple Order Pay
 
-极简匿名商品支付站点。用户不需要注册，选择商品并填写邮箱后创建订单；后端支持 mock、支付宝官方电脑网站支付和 DaxPay 支付；管理员可维护账号密码库存，支付成功后自动分配账号、写入交付结果并发送邮件；用户通过订单号 + 查询码或 token 链接查看交付结果。
+极简匿名商品支付站点。用户不需要注册，选择商品并填写邮箱后直接打开支付窗口；后端支持 mock、艺爪付费、虎皮椒、支付宝官方电脑网站支付和 DaxPay 支付；管理员可维护账号密码库存，支付成功后自动分配账号、写入交付结果并发送邮件；用户通过订单号 + 查询码或 token 链接查看交付结果。
 
 ## 技术栈
 
@@ -282,10 +282,16 @@ XUNHUPAY_PLUGINS=simple-order-pay
 
 1. 用户在本站下单，系统生成订单并锁定一条库存。
 2. 后端用 `customer.info` 创建或查询艺爪客户，并拿到 `home_link.url`。
-3. 用户跳转到艺爪付费页面付款。
-4. 用户回到本站后点击“我已支付，检查支付状态”。
-5. 后端再次调用 `customer.info`，检测 `balance_s` 里是否有已付费且可用的权益。
+3. 前端直接弹出艺爪付费页面，用户在新窗口付款。
+4. 本站自动轮询 `customer.info`，用户也可以点击“我已完成支付，立即检查”。
+5. 后端检测 `balance_s` 里是否有已付费且可用的权益。
 6. 检测成功后订单变成 `paid`，系统自动扣库存、写交付结果并发送邮件。
+
+用户不需要填写支付宝订单号。只有当你在艺爪后台使用“人工核对交易单号”的简易收款流程、并且 API 不返回可确认的权益状态时，系统才无法做到全自动确认；这种情况下建议改用虎皮椒、支付宝官方支付或 DaxPay 这类有回调的网关。
+
+库存会在创建待支付订单时短暂锁定，避免 1 个账号被多个人同时付款购买。用户关闭艺爪支付窗口且未检测到付款时，前端会调用取消接口释放库存；如果用户直接关闭本站页面，库存会在 `INVENTORY_RESERVATION_MINUTES` 到期后自动释放。
+
+艺爪付费墙的真实扣款价格在艺爪后台配置。本站后台的商品价格只负责前台展示，请保持两边一致；如果希望“本站后台价格就是真实扣款价格”，需要改用支持后端创建指定金额订单的支付网关。
 
 `.env` 示例：
 
@@ -308,6 +314,7 @@ EZBOTI_REQUIRE_USABLE=true
 
 ```text
 POST /api/payments/ezboti/sync/{order_no}?query_code=...
+POST /api/orders/{order_no}/cancel?query_code=...
 ```
 
 ## 管理后台
@@ -505,6 +512,7 @@ db/schema.sql
 - `POST /api/payments/xunhupay/notify`
 - `POST /api/payments/ezboti/sync/{order_no}?query_code=...`
 - `POST /api/payments/mock/{order_no}?query_code=...`
+- `POST /api/orders/{order_no}/cancel?query_code=...`
 
 后台：
 

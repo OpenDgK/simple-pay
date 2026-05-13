@@ -52,6 +52,7 @@
                   <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required />
                 </label>
                 <button id="submitOrderBtn" class="button primary wide" type="submit">立即支付</button>
+                <div id="checkoutNotice" class="checkout-notice" hidden></div>
               </form>
             </div>
           </section>
@@ -265,7 +266,7 @@
                     <div class="section-title row-title">
                       <div>
                         <h2>商品设置</h2>
-                        <p>可新增多个商品，并设置每个商品的价格和展示状态。</p>
+                        <p>可新增多个商品，并设置展示价格；真实支付价格要和支付网站后台保持一致。</p>
                       </div>
                       <button id="newProductBtn" class="button quiet" type="button">新增商品</button>
                     </div>
@@ -282,7 +283,7 @@
                       </label>
                       <div class="form-grid">
                         <label>
-                          价格（分）
+                          价格（分，需与支付网站一致）
                           <input name="amount_cents" type="number" min="1" step="1" placeholder="9900" required />
                         </label>
                         <label>
