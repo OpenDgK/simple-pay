@@ -285,12 +285,12 @@ function parsePaymentPayload(order) {
   }
 }
 
-function renderManualCheckout(order) {
+function manualPaymentMarkup(order) {
   const payload = parsePaymentPayload(order);
   const qr = payload.qr_url
     ? `<img class="payment-qr" src="${escapeHtml(payload.qr_url)}" alt="收款码" />`
     : `<div class="empty-state">收款码未配置，请联系管理员。</div>`;
-  setCheckoutNotice(`
+  return `
     <div class="checkout-state manual">
       <strong>扫码付款后等待人工确认</strong>
       <span>${escapeHtml(payload.instructions || "请扫码付款，付款后点击下方按钮。")}</span>
@@ -302,27 +302,58 @@ function renderManualCheckout(order) {
           <p><strong>金额：</strong>${escapeHtml(order.amount_text)} ${escapeHtml(order.currency)}</p>
         </div>
       </div>
-      <button id="manualPaidBtn" class="button primary wide" type="button">我已付款，等待确认</button>
+      <button class="button primary wide manualPaidBtn" type="button">我已付款，等待确认</button>
     </div>
-  `);
-  $("#manualPaidBtn").addEventListener("click", async () => {
+  `;
+}
+
+function manualSubmittedMarkup(order) {
+  return `
+    <div class="checkout-state warning">
+      <strong>已提交，等待管理员确认收款。</strong>
+      <span>管理员会尽快核对收款，10 分钟内发货。账号密码会自动发送到你的邮箱，请保存订单号和查询码。</span>
+      <div class="manual-payment-meta">
+        <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
+        <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
+      </div>
+    </div>
+  `;
+}
+
+function bindManualPaymentButtons(order, root) {
+  root.querySelectorAll(".manualPaidBtn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      button.textContent = "正在提交确认...";
+      try {
+        await submitManualPayment(order);
+      } catch (error) {
+        button.disabled = false;
+        button.textContent = "我已付款，等待确认";
+        showToast(error.message);
+      }
+    });
+  });
+}
+
+async function submitManualPayment(order) {
     const reviewing = await request(`/payments/manual/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
       method: "POST",
     });
-    setCheckoutNotice(`
-      <div class="checkout-state warning">
-        <strong>已提交，等待管理员确认收款。</strong>
-        <span>管理员会尽快核对收款，10 分钟内发货。账号密码会自动发送到你的邮箱，请保存订单号和查询码。</span>
-        <div class="manual-payment-meta">
-          <p><strong>订单号：</strong>${escapeHtml(order.order_no)}</p>
-          <p><strong>查询码：</strong>${escapeHtml(order.query_code)}</p>
-        </div>
-      </div>
-    `);
-    $("#lookupResult").innerHTML = renderOrderCard(reviewing);
+    const submitted = manualSubmittedMarkup(order);
+    const notice = $("#checkoutNotice");
+    const actionArea = $("#payActionArea");
+    if (notice && !notice.hidden) notice.innerHTML = submitted;
+    if (actionArea) actionArea.innerHTML = submitted;
+    if ($("#createdPayStatus")) $("#createdPayStatus").textContent = reviewing.pay_status;
+    if ($("#lookupResult")) $("#lookupResult").innerHTML = renderOrderCard(reviewing);
     await loadConfig();
     showToast("已提交付款确认，等待管理员处理");
-  });
+}
+
+function renderManualCheckout(order) {
+  setCheckoutNotice(manualPaymentMarkup(order));
+  bindManualPaymentButtons(order, $("#checkoutNotice"));
 }
 
 function renderMockCheckout(order) {
@@ -438,6 +469,11 @@ function renderPayAction(order) {
       await loadConfig();
       showToast("Mock 支付已完成");
     });
+    return;
+  }
+  if (order.pay_channel === "manual") {
+    area.innerHTML = manualPaymentMarkup(order);
+    bindManualPaymentButtons(order, area);
     return;
   }
   if (order.pay_body && /^https?:\/\//i.test(order.pay_body)) {
