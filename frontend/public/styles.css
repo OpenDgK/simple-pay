@@ -639,6 +639,13 @@ select:focus {
   border-color: rgba(220, 38, 38, 0.24);
 }
 
+.button.compact {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 .button.wide {
   width: 100%;
 }
@@ -822,6 +829,11 @@ code {
 .status.sold {
   color: #475569;
   background: #e2e8f0;
+}
+
+.inventory-inline-actions {
+  display: flex;
+  margin-top: 8px;
 }
 
 .lookup-card {

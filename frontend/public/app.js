@@ -986,17 +986,22 @@ async function loadInventory() {
 }
 
 function renderInventory() {
+  const deleteAction = (item, inline = false) => {
+    if (item.status === "sold") {
+      return inline ? "" : `<span class="muted-text">已售出，保留记录</span>`;
+    }
+    return `<button class="button quiet danger${inline ? " compact" : ""}" type="button" data-delete-inventory="${escapeHtml(item.id)}">删除库存</button>`;
+  };
   const rows = state.adminInventory.map((item) => `
     <tr>
-      <td><strong>${escapeHtml(item.account)}</strong></td>
+      <td>
+        <strong>${escapeHtml(item.account)}</strong>
+        <div class="inventory-inline-actions">${deleteAction(item, true)}</div>
+      </td>
       <td>${escapeHtml(item.password)}</td>
       <td>${statusBadge(item.status)}</td>
       <td>${item.order_no ? escapeHtml(item.order_no) : "-"}</td>
-      <td>
-        ${item.status !== "sold"
-          ? `<button class="button quiet danger" type="button" data-delete-inventory="${escapeHtml(item.id)}">删除</button>`
-          : `<span class="muted-text">已售出，保留记录</span>`}
-      </td>
+      <td>${deleteAction(item)}</td>
     </tr>
   `).join("");
   $("#inventoryTableBody").innerHTML = rows || `<tr><td colspan="5">暂无库存</td></tr>`;
