@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -46,12 +47,48 @@ def sign_standard_params(params: dict[str, Any], secret: str) -> str:
 
 
 def verify_pay188_callback(payload: dict[str, Any], secret: str) -> bool:
-    received = str(payload.get("sign") or "")
-    if not received or not secret:
+    if not secret:
         return False
-    base = _sign_base(payload, exclude={"sign"})
-    expected = hashlib.md5(f"{base}&key={secret}".encode("utf-8")).hexdigest().upper()
-    return hmac.compare_digest(expected.lower(), received.lower())
+    for candidate in _callback_candidates(payload):
+        received = str(candidate.get("sign") or "")
+        if not received:
+            continue
+        for exclude in ({"sign"}, {"sign", "sign_type"}):
+            base = _sign_base(candidate, exclude=exclude)
+            expected_values = [
+                hashlib.md5(f"{base}&key={secret}".encode("utf-8")).hexdigest(),
+                hashlib.md5(f"{base}{secret}".encode("utf-8")).hexdigest(),
+            ]
+            if any(hmac.compare_digest(expected.lower(), received.lower()) for expected in expected_values):
+                return True
+    return False
+
+
+def _callback_candidates(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = [payload]
+    for key in ("data", "payload", "order"):
+        nested = payload.get(key)
+        if isinstance(nested, dict):
+            merged = dict(nested)
+            for top_key, top_value in payload.items():
+                if top_key != key and top_key not in merged:
+                    merged[top_key] = top_value
+            candidates.append(merged)
+    return candidates
+
+
+def normalize_callback_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    for candidate in _callback_candidates(payload):
+        if any(
+            key in candidate
+            for key in ("merchantOrderId", "out_trade_no", "outTradeNo", "trade_order_id", "attach")
+        ):
+            return candidate
+    return payload
+
+
+def safe_callback_payload(payload: dict[str, Any]) -> str:
+    return json.dumps(payload, ensure_ascii=False, default=str)
 
 
 @dataclass

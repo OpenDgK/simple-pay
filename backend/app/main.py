@@ -23,7 +23,14 @@ from .db import get_db, init_db, wait_for_database
 from .email_service import send_account_delivery_email, send_manual_payment_review_email
 from .ezboti import EzbotiClient
 from .models import AppSetting, InventoryItem, Order, PaymentEvent, Product
-from .pay188 import PAY188_FAILED_STATUSES, PAY188_PAID_STATUSES, Pay188Client, verify_pay188_callback
+from .pay188 import (
+    PAY188_FAILED_STATUSES,
+    PAY188_PAID_STATUSES,
+    Pay188Client,
+    normalize_callback_payload,
+    safe_callback_payload,
+    verify_pay188_callback,
+)
 from .schemas import (
     AdminLoginRequest,
     DeliveryUpdateRequest,
@@ -253,9 +260,32 @@ def _delivery_text(product_name: str, account: str, password: str) -> str:
 def _fulfill_paid_order(db: Session, order: Order) -> None:
     item = order.inventory_item
     if not item:
-        order.delivery_status = "pending"
-        order.email_error = "没有找到已分配库存，请手动处理"
-        return
+        product = db.scalar(
+            select(Product)
+            .where(
+                Product.active == 1,
+                Product.name == order.product_name,
+                Product.amount_cents == order.amount_cents,
+                Product.currency == order.currency,
+            )
+            .order_by(Product.sort_order.asc(), Product.id.asc())
+            .limit(1)
+        )
+        if product:
+            item = db.scalar(
+                select(InventoryItem)
+                .where(InventoryItem.product_id == product.id, InventoryItem.status == "available")
+                .order_by(InventoryItem.id.asc())
+                .with_for_update(skip_locked=True)
+                .limit(1)
+            )
+            if item:
+                item.order = order
+                item.reserved_at = item.reserved_at or datetime.now()
+        if not item:
+            order.delivery_status = "pending"
+            order.email_error = "没有找到可用库存，请手动处理"
+            return
 
     item.status = "sold"
     item.sold_at = item.sold_at or datetime.now()
@@ -927,9 +957,8 @@ async def pay188_notify(request: Request, db: Session = Depends(get_db)) -> Plai
     if not isinstance(payload, dict):
         return PlainTextResponse("fail", status_code=400)
     payload = {str(key): value for key, value in payload.items()}
-
-    if not verify_pay188_callback(payload, settings.pay188_secret_key):
-        return PlainTextResponse("fail", status_code=400)
+    signature_valid = verify_pay188_callback(payload, settings.pay188_secret_key)
+    payload = normalize_callback_payload(payload)
     if payload.get("merchantId") and str(payload.get("merchantId")) != settings.pay188_merchant_id:
         return PlainTextResponse("fail", status_code=400)
 
@@ -945,6 +974,17 @@ async def pay188_notify(request: Request, db: Session = Depends(get_db)) -> Plai
     order = db.scalar(select(Order).where(Order.order_no == str(order_no)))
     if not order:
         return PlainTextResponse("fail", status_code=404)
+    if not signature_valid:
+        db.add(
+            PaymentEvent(
+                order=order,
+                event_type="pay188_notify_invalid_signature",
+                raw_payload=safe_callback_payload(payload),
+                signature_valid=0,
+            )
+        )
+        db.commit()
+        return PlainTextResponse("fail", status_code=400)
 
     amount_value = payload.get("amount") or payload.get("money") or payload.get("total_fee") or payload.get("paidAmount")
     if amount_value is not None and str(amount_value).strip() != "":
@@ -957,7 +997,7 @@ async def pay188_notify(request: Request, db: Session = Depends(get_db)) -> Plai
                 PaymentEvent(
                     order=order,
                     event_type="pay188_notify_amount_mismatch",
-                    raw_payload=json.dumps(payload, ensure_ascii=False),
+                    raw_payload=safe_callback_payload(payload),
                     signature_valid=1,
                 )
             )
@@ -993,7 +1033,7 @@ async def pay188_notify(request: Request, db: Session = Depends(get_db)) -> Plai
         PaymentEvent(
             order=order,
             event_type="pay188_notify",
-            raw_payload=json.dumps(payload, ensure_ascii=False),
+            raw_payload=safe_callback_payload(payload),
             signature_valid=1,
         )
     )
