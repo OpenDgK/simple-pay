@@ -73,6 +73,23 @@ DEFAULT_CONTENT: dict[str, str] = {
     "step3Body": "管理员确认收款后，账号密码会发送到你填写的邮箱。",
 }
 
+DEFAULT_PRODUCTS: list[dict[str, Any]] = [
+    {
+        "name": "PLUS一月",
+        "description": "",
+        "amount_cents": settings.product_price_cents,
+        "currency": settings.product_currency,
+        "sort_order": 10,
+    },
+    {
+        "name": "Team一月",
+        "description": "",
+        "amount_cents": settings.product_price_cents,
+        "currency": settings.product_currency,
+        "sort_order": 20,
+    },
+]
+
 if settings.cors_allow_origins:
     app.add_middleware(
         CORSMiddleware,
@@ -112,16 +129,17 @@ def _amount_yuan(cents: int) -> Decimal:
 
 def _seed_default_data(db: Session) -> None:
     if not db.scalar(select(Product.id).limit(1)):
-        db.add(
-            Product(
-                name=settings.product_name,
-                description=settings.product_description or None,
-                amount_cents=settings.product_price_cents,
-                currency=settings.product_currency,
-                active=1,
-                sort_order=10,
+        for product in DEFAULT_PRODUCTS:
+            db.add(
+                Product(
+                    name=product["name"],
+                    description=product["description"] or None,
+                    amount_cents=product["amount_cents"],
+                    currency=product["currency"],
+                    active=1,
+                    sort_order=product["sort_order"],
+                )
             )
-        )
     for key, value in DEFAULT_CONTENT.items():
         if not db.get(AppSetting, key):
             db.add(AppSetting(key=key, value=value))
