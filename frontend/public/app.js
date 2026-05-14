@@ -223,30 +223,23 @@ function setAfterPayNoticePanel(key) {
 
 function productPlanLabel(product) {
   const name = String(product.name || "");
-  if (/team/i.test(name)) return "Team 套餐";
-  if (/plus/i.test(name)) return "PLUS 套餐";
-  return "可购买套餐";
+  return name ? `${name} 套餐` : "可购买套餐";
 }
 
 function productTabLabel(product) {
-  const name = String(product.name || "");
-  if (/team/i.test(name)) return "Team";
-  if (/plus/i.test(name)) return "Plus";
+  const name = String(product.name || "").trim();
   return name || "套餐";
 }
 
 function productIntro(product) {
   if (product.description) return product.description;
   const name = String(product.name || "");
-  if (/team/i.test(name)) {
-    return "适合团队协作使用，支付完成后从 Team 库存发货到邮箱。";
-  }
-  return "适合个人使用，支付完成后从 PLUS 库存发货到邮箱。";
+  return `购买 ${name || "该商品"} 后，系统会把库存账号密码自动发送到你的邮箱。`;
 }
 
 function productFeatures(product) {
   const name = String(product.name || "");
-  const plan = /team/i.test(name) ? "Team 一月" : /plus/i.test(name) ? "PLUS 一月" : "一月套餐";
+  const plan = name || "一月套餐";
   return [plan, "支付完成自动发货", "邮箱接收账号密码"];
 }
 
@@ -1000,9 +993,9 @@ function renderInventory() {
       <td>${statusBadge(item.status)}</td>
       <td>${item.order_no ? escapeHtml(item.order_no) : "-"}</td>
       <td>
-        ${["available", "disabled"].includes(item.status)
-          ? `<button class="button quiet" type="button" data-delete-inventory="${escapeHtml(item.id)}">删除</button>`
-          : "-"}
+        ${item.status !== "sold"
+          ? `<button class="button quiet danger" type="button" data-delete-inventory="${escapeHtml(item.id)}">删除</button>`
+          : `<span class="muted-text">已售出，保留记录</span>`}
       </td>
     </tr>
   `).join("");
@@ -1034,6 +1027,7 @@ async function handleInventoryBulkSave(event) {
 }
 
 async function deleteInventoryItem(itemId) {
+  if (!window.confirm("确定删除这条库存吗？删除后不可恢复，已售出的库存不会被允许删除。")) return;
   await request(`${state.config.adminApiPrefix}/inventory/${encodeURIComponent(itemId)}`, {
     method: "DELETE",
     admin: true,

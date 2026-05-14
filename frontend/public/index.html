@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-13" />
-    <script defer src="/config.js?v=20260514-13"></script>
-    <script defer src="/app.js?v=20260514-13"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-14" />
+    <script defer src="/config.js?v=20260514-14"></script>
+    <script defer src="/app.js?v=20260514-14"></script>
   </head>
   <body>
     <div class="page">
@@ -356,23 +356,29 @@
         </header>
         <div id="afterPayNoticeTabs" class="notice-tabs" role="tablist" aria-label="注意事项栏目">
           <button class="notice-tab active" type="button" role="tab" aria-selected="true" aria-controls="noticePanelMigration" data-notice-key="migration">
-            账号聊天记录 / 项目迁移
+            <span class="notice-tab-index">1</span>
+            <span>账号聊天记录 / 项目迁移</span>
           </button>
           <button class="notice-tab" type="button" role="tab" aria-selected="false" aria-controls="noticePanelEmail" data-notice-key="email">
-            账号辅助邮箱绑定
+            <span class="notice-tab-index">2</span>
+            <span>账号辅助邮箱绑定</span>
           </button>
           <button class="notice-tab" type="button" role="tab" aria-selected="false" aria-controls="noticePanelSupport" data-notice-key="support">
-            客服邮箱
+            <span class="notice-tab-index">3</span>
+            <span>客服邮箱</span>
           </button>
         </div>
         <div class="notice-gallery">
           <figure id="noticePanelMigration" class="notice-panel active" role="tabpanel" data-notice-key="migration">
+            <span class="notice-panel-badge">1</span>
             <img src="/assets/notice-project-migration.png" alt="账号聊天记录和项目迁移说明" />
           </figure>
           <figure id="noticePanelEmail" class="notice-panel" role="tabpanel" data-notice-key="email" hidden>
+            <span class="notice-panel-badge">2</span>
             <img src="/assets/notice-email-binding.png" alt="账号辅助邮箱绑定说明" />
           </figure>
           <figure id="noticePanelSupport" class="notice-panel" role="tabpanel" data-notice-key="support" hidden>
+            <span class="notice-panel-badge">3</span>
             <img src="/assets/notice-support-email.png" alt="客服邮箱 1493719411@qq.com" />
           </figure>
         </div>

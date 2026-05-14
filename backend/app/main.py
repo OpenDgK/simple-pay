@@ -1188,8 +1188,13 @@ def delete_inventory_item(item_id: int, db: Session = Depends(get_db)) -> dict[s
     item = db.get(InventoryItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Inventory item not found")
-    if item.status in {"reserved", "sold"}:
-        raise HTTPException(status_code=400, detail="Reserved or sold inventory cannot be deleted")
+    order = item.order
+    if item.status == "sold" or (order and order.pay_status == "paid"):
+        raise HTTPException(status_code=400, detail="已售出的库存已关联订单，不能删除")
+    if order and order.pay_status in {"pending", "reviewing"}:
+        order.pay_status = "failed"
+        order.delivery_status = "cancelled"
+        order.payment_error = "管理员删除了预留库存"
     db.delete(item)
     db.commit()
     return {"status": "deleted"}
