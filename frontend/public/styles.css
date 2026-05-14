@@ -325,7 +325,10 @@ select {
 
 .product-page-tabs-wrap {
   display: flex;
+  align-items: center;
+  flex-direction: column;
   justify-content: center;
+  gap: 10px;
   margin: 0 0 18px;
   overflow-x: auto;
   padding: 2px 2px 8px;
@@ -356,6 +359,21 @@ select {
   display: none;
 }
 
+.product-tabs-hint {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid rgba(16, 163, 127, 0.18);
+  border-radius: 999px;
+  color: var(--accent-dark);
+  background: rgba(223, 247, 242, 0.92);
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+
 .product-tab {
   display: inline-flex;
   flex: 0 0 auto;
@@ -377,6 +395,24 @@ select {
   transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
+.product-tab-index {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--accent-blue-dark);
+  background: #dff7f2;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(16, 163, 127, 0.14);
+}
+
+.product-tab-name {
+  min-width: 0;
+}
+
 .product-tab:hover {
   color: var(--primary);
   transform: translateY(-1px);
@@ -386,6 +422,12 @@ select {
   color: #fff;
   background: linear-gradient(135deg, #3b82c4, var(--accent-blue));
   box-shadow: 0 12px 28px rgba(2, 132, 199, 0.28);
+}
+
+.product-tab.active .product-tab-index {
+  color: var(--accent-blue-dark);
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
 }
 
 .tab-sold-out {
@@ -1691,6 +1733,12 @@ tbody tr:hover {
     padding: 0 0 12px;
   }
 
+  .product-tabs-hint {
+    width: 100%;
+    min-height: 38px;
+    font-size: 15px;
+  }
+
   .product-tabs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1714,7 +1762,7 @@ tbody tr:hover {
     width: 100%;
     min-width: 0;
     min-height: 44px;
-    flex-direction: column;
+    flex-direction: row;
     gap: 4px;
     padding: 8px 10px;
     border-radius: 16px;
@@ -1728,10 +1776,20 @@ tbody tr:hover {
   }
 
   .product-tab > span:first-child {
+    display: inline-grid;
+  }
+
+  .product-tab-name {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  .product-tab-index {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 
   .tab-sold-out {

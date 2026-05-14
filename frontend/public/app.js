@@ -284,7 +284,7 @@ function renderProductTabs() {
     return;
   }
   const currentProduct = ensureSelectedProduct();
-  tabs.innerHTML = state.products.map((product) => {
+  tabs.innerHTML = state.products.map((product, index) => {
     const isActive = currentProduct && String(product.id) === String(currentProduct.id);
     const soldOut = Number(product.stock_count || 0) <= 0;
     const soldOutBadge = soldOut ? `<span class="tab-sold-out">已售罄</span>` : "";
@@ -296,7 +296,8 @@ function renderProductTabs() {
         aria-selected="${isActive ? "true" : "false"}"
         data-product-id="${escapeHtml(product.id)}"
       >
-        <span>${escapeHtml(productTabLabel(product))}</span>
+        <span class="product-tab-index">${index + 1}</span>
+        <span class="product-tab-name">${escapeHtml(productTabLabel(product))}</span>
         ${soldOutBadge}
       </button>
     `;
