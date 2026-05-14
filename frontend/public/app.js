@@ -18,7 +18,6 @@ const state = {
   apiBase: runtimeConfig.apiBaseUrl || "/api",
   config: null,
   products: [],
-  selectedProductId: null,
   adminProducts: [],
   adminInventory: [],
   adminToken: localStorage.getItem("sop_admin_token") || "",
@@ -97,8 +96,8 @@ function emailBadge(order) {
   return `<span class="status pending">pending</span>`;
 }
 
-function selectedProduct() {
-  return state.products.find((item) => String(item.id) === String(state.selectedProductId)) || state.products[0] || null;
+function primaryProduct() {
+  return state.products.find((item) => Number(item.stock_count || 0) > 0) || state.products[0] || null;
 }
 
 function productStockText(product) {
@@ -116,12 +115,12 @@ function applyContent(content = {}) {
 }
 
 function updateHeroProduct() {
-  const product = selectedProduct();
+  const product = primaryProduct();
   if (!product) return;
   $("#productTitle").textContent = product.name;
   $("#priceText").textContent = product.priceText || moneyText(product.amount_cents);
   $("#currencyText").textContent = product.currency || "CNY";
-  document.title = `${product.name} · 在线支付`;
+  document.title = state.products.length > 1 ? "PLUS / Team · 在线支付" : `${product.name} · 在线支付`;
 }
 
 function setCheckoutNotice(html) {
@@ -157,36 +156,71 @@ function closePaymentModal(options = {}) {
   document.body.classList.remove("payment-open");
 }
 
-function renderProductOptions() {
-  const box = $("#productOptions");
-  const button = $("#submitOrderBtn");
+function productPlanLabel(product) {
+  const name = String(product.name || "");
+  if (/team/i.test(name)) return "Team 套餐";
+  if (/plus/i.test(name)) return "PLUS 套餐";
+  return "可购买套餐";
+}
+
+function productIntro(product) {
+  if (product.description) return product.description;
+  const name = String(product.name || "");
+  if (/team/i.test(name)) {
+    return "适合团队协作使用，付款确认后从 Team 库存发货到邮箱。";
+  }
+  return "适合个人使用，付款确认后从 PLUS 库存发货到邮箱。";
+}
+
+function productFeatures(product) {
+  const name = String(product.name || "");
+  const plan = /team/i.test(name) ? "Team 一月" : /plus/i.test(name) ? "PLUS 一月" : "一月套餐";
+  return [plan, "独立库存发货", "邮箱接收账号密码"];
+}
+
+function submitButtonText(product) {
+  return Number(product.stock_count || 0) > 0 ? `购买 ${product.name}` : "已售罄";
+}
+
+function renderProductCards() {
+  const box = $("#productCards");
+  if (!box) return;
   if (!state.products.length) {
     box.innerHTML = `<div class="empty-state">暂无可购买商品，请联系管理员。</div>`;
-    button.disabled = true;
     return;
   }
-  if (!state.selectedProductId || !state.products.some((item) => String(item.id) === String(state.selectedProductId))) {
-    state.selectedProductId = (state.products.find((item) => Number(item.stock_count || 0) > 0) || state.products[0]).id;
-  }
-  const currentProduct = selectedProduct();
-  button.disabled = !currentProduct || Number(currentProduct.stock_count || 0) <= 0;
-  button.textContent = button.disabled ? "已售罄" : "立即支付";
   box.innerHTML = state.products.map((product) => {
-    const checked = String(product.id) === String(state.selectedProductId) ? "checked" : "";
-    const disabled = Number(product.stock_count || 0) <= 0 ? "disabled" : "";
-    const soldOutClass = disabled ? " sold-out" : "";
-    const description = product.description ? `<small>${escapeHtml(product.description)}</small>` : "";
+    const soldOut = Number(product.stock_count || 0) <= 0;
+    const disabled = soldOut ? "disabled" : "";
+    const soldOutClass = soldOut ? " sold-out" : "";
+    const features = productFeatures(product).map((feature) => (
+      `<li><span class="mini-check">✓</span>${escapeHtml(feature)}</li>`
+    )).join("");
     return `
-      <label class="product-card${soldOutClass}">
-        <input type="radio" name="product_id" value="${escapeHtml(product.id)}" ${checked} ${disabled} />
-        <span>
-          <strong>${escapeHtml(product.name)}</strong>
-          ${description}
-        </span>
-        <b>${escapeHtml(product.priceText || moneyText(product.amount_cents))} ${escapeHtml(product.currency || "CNY")}<small>${escapeHtml(productStockText(product))}</small></b>
-      </label>
+      <form class="product-buy-card hero-card${soldOutClass}" data-product-id="${escapeHtml(product.id)}" enctype="multipart/form-data">
+        <input type="hidden" name="product_id" value="${escapeHtml(product.id)}" />
+        <div class="product-card-head">
+          <span class="product-plan-badge">${escapeHtml(productPlanLabel(product))}</span>
+          <h2>${escapeHtml(product.name)}</h2>
+          <p>${escapeHtml(productIntro(product))}</p>
+        </div>
+        <div class="product-price-line">
+          <strong>${escapeHtml(product.priceText || moneyText(product.amount_cents))}</strong>
+          <em>${escapeHtml(product.currency || "CNY")}</em>
+          <span class="stock-pill">${escapeHtml(productStockText(product))}</span>
+        </div>
+        <ul class="product-intro-list">${features}</ul>
+        <label>
+          邮箱
+          <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required ${disabled} />
+        </label>
+        <button class="button primary wide" type="submit" ${disabled}>${escapeHtml(submitButtonText(product))}</button>
+      </form>
     `;
   }).join("");
+  box.querySelectorAll(".product-buy-card").forEach((form) => {
+    form.addEventListener("submit", handleOrderSubmit);
+  });
   updateHeroProduct();
 }
 
@@ -194,7 +228,7 @@ async function loadConfig() {
   state.config = await request("/config");
   state.products = state.config.products || [];
   applyContent(state.config.content || {});
-  renderProductOptions();
+  renderProductCards();
 }
 
 function renderOrderCard(order) {
@@ -214,17 +248,22 @@ function renderOrderCard(order) {
 
 async function handleOrderSubmit(event) {
   event.preventDefault();
-  const button = $("#submitOrderBtn");
+  const form = event.currentTarget;
+  const button = form.querySelector("button[type='submit']");
+  const productId = form.dataset.productId || new FormData(form).get("product_id");
+  const product = state.products.find((item) => String(item.id) === String(productId));
+  const defaultButtonText = product ? submitButtonText(product) : "立即支付";
   button.disabled = true;
   button.textContent = "正在创建订单...";
   try {
-    const formData = new FormData(event.currentTarget);
-    if (!formData.get("product_id") && state.selectedProductId) {
-      formData.set("product_id", state.selectedProductId);
+    if (!productId) {
+      throw new Error("请选择商品");
     }
-    if (selectedProduct() && Number(selectedProduct().stock_count || 0) <= 0) {
+    if (product && Number(product.stock_count || 0) <= 0) {
       throw new Error("该商品已售罄");
     }
+    const formData = new FormData(form);
+    formData.set("product_id", productId);
     const data = await request("/orders", {
       method: "POST",
       body: formData,
@@ -236,7 +275,11 @@ async function handleOrderSubmit(event) {
     closePaymentModal();
     showToast(error.message);
   } finally {
-    renderProductOptions();
+    if (button.isConnected) {
+      button.disabled = product ? Number(product.stock_count || 0) <= 0 : false;
+      button.textContent = defaultButtonText;
+    }
+    renderProductCards();
   }
 }
 
@@ -978,13 +1021,6 @@ async function boot() {
   } catch (error) {
     showToast(error.message);
   }
-  $("#productOptions").addEventListener("change", (event) => {
-    if (event.target.name === "product_id") {
-      state.selectedProductId = event.target.value;
-      renderProductOptions();
-    }
-  });
-  $("#orderForm").addEventListener("submit", handleOrderSubmit);
   $("#lookupForm")?.addEventListener("submit", handleLookup);
   setupPaymentModalEvents();
   setupSupportWidget();

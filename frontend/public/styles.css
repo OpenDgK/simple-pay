@@ -313,81 +313,125 @@ select {
   text-align: center;
 }
 
-.product-fieldset {
-  min-width: 0;
-  margin: 18px 0 0;
-  padding: 0;
-  border: 0;
+.product-buy-zone {
+  display: grid;
+  gap: 16px;
 }
 
-.product-fieldset legend {
-  margin-bottom: 10px;
-  color: #374151;
-  font-size: 14px;
-  font-weight: 800;
+.product-zone-title {
+  padding: 0 2px;
 }
 
-.product-options {
+.product-purchase-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.product-buy-card {
+  display: grid;
+  gap: 18px;
+}
+
+.product-buy-card:hover {
+  border-color: rgba(2, 132, 199, 0.32);
+  box-shadow: 0 34px 86px rgba(15, 23, 42, 0.17);
+}
+
+.product-buy-card.sold-out {
+  opacity: 0.7;
+}
+
+.product-card-head {
   display: grid;
   gap: 10px;
 }
 
-.product-options .product-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+.product-plan-badge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  color: var(--accent-dark);
+  background: rgba(16, 163, 127, 0.1);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.product-card-head h2 {
   margin: 0;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #fff;
-  cursor: pointer;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  color: var(--primary);
+  font-size: 28px;
+  line-height: 1.12;
 }
 
-.product-options .product-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(2, 132, 199, 0.42);
-}
-
-.product-options .product-card:has(input:checked) {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
-}
-
-.product-options .product-card.sold-out {
-  opacity: 0.58;
-  cursor: not-allowed;
-}
-
-.product-card input {
-  width: 18px;
-  min-height: 18px;
-  accent-color: var(--accent);
-}
-
-.product-card strong,
-.product-card small {
-  display: block;
-}
-
-.product-card span {
-  min-width: 0;
-}
-
-.product-card small {
-  margin-top: 2px;
+.product-card-head p {
+  margin: 0;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
+  line-height: 1.65;
 }
 
-.product-card b {
-  white-space: nowrap;
+.product-price-line {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.product-price-line strong {
+  color: var(--primary);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.product-price-line em {
+  color: var(--accent-amber);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.stock-pill {
+  min-height: 26px;
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 4px 10px;
   color: var(--accent-blue-dark);
-  font-size: 15px;
+  background: #eff6ff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.product-intro-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.product-intro-list li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.mini-check {
+  display: grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--accent);
+  background: rgba(16, 163, 127, 0.11);
+  font-weight: 900;
 }
 
 form label {
@@ -496,6 +540,7 @@ select:focus {
   width: 100%;
 }
 
+.product-buy-card .button,
 .order-form .button,
 .compact-form .button {
   margin-top: 22px;
@@ -1228,9 +1273,8 @@ tbody tr:hover {
   }
 
   .hero-card .section-title,
-  .product-fieldset,
-  .order-form > label,
-  .order-form .button {
+  .product-buy-card > label,
+  .product-buy-card .button {
     width: 100%;
     max-width: 300px;
   }
@@ -1239,23 +1283,23 @@ tbody tr:hover {
     font-size: 36px;
   }
 
-  .product-options .product-card,
   .form-grid,
   .manual-payment-box {
     grid-template-columns: 1fr;
   }
 
-  .product-options .product-card {
-    overflow: hidden;
+  .product-price-line {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .product-card b {
-    white-space: normal;
-    overflow-wrap: anywhere;
+  .stock-pill {
+    margin-left: 0;
   }
 
-  .product-card strong,
-  .product-card small {
+  .product-card-head h2,
+  .product-card-head p,
+  .product-intro-list li {
     overflow-wrap: anywhere;
   }
 
@@ -1263,8 +1307,8 @@ tbody tr:hover {
   textarea,
   select,
   .button,
-  .product-options,
-  .product-card {
+  .product-purchase-grid,
+  .product-buy-card {
     max-width: 100%;
     min-width: 0;
   }
