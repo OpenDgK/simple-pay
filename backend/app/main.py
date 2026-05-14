@@ -551,6 +551,7 @@ async def create_order(
                 order_no=order.order_no,
                 title=product.name,
                 amount=_amount_yuan(product.amount_cents),
+                return_url=f"{settings.public_base_url}/order/{query_token}",
             )
             order.daxpay_order_no = created.pay188_order_no
             order.pay_body = created.pay_body

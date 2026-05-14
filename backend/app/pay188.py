@@ -111,6 +111,7 @@ class Pay188Client:
         order_no: str,
         title: str,
         amount: Decimal,
+        return_url: str | None = None,
     ) -> Pay188CreateResult:
         required = {
             "PAY188_GATEWAY_URL": self.gateway_url,
@@ -127,7 +128,7 @@ class Pay188Client:
             "amount": f"{amount:.2f}",
             "paymentMethod": settings.pay188_payment_method,
             "notifyUrl": settings.effective_pay188_notify_url,
-            "returnUrl": settings.effective_pay188_return_url,
+            "returnUrl": return_url or settings.effective_pay188_return_url,
             "subject": title[:120],
         }
         if settings.pay188_coin_type:

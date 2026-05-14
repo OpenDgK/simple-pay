@@ -246,25 +246,21 @@ function launchCheckout(order, paymentWindow) {
   const fallbackLink = paymentUrl
     ? `<a class="button primary wide" href="${escapeHtml(paymentUrl)}" target="_blank" rel="noopener">打开支付页面</a>`
     : `<div class="token-box"><span>支付参数</span><code>${escapeHtml(order.pay_body || "支付订单已创建，请稍后重试。")}</code></div>`;
-  const syncButton = order.pay_channel === "ezboti"
-    ? `<button id="inlineSyncPayBtn" class="button secondary wide" type="button">我已完成支付，立即检查</button>`
-    : "";
+  const syncButton = `<button id="inlineSyncPayBtn" class="button secondary wide" type="button">我已完成支付，刷新状态</button>`;
 
   setCheckoutNotice(`
     <div class="checkout-state">
       <strong>${popupText}</strong>
-      <span>付款确认后会自动扣减库存、发送账号密码到你的邮箱。</span>
+      <span>这个页面会自动检查支付状态。付款确认后会发送账号密码到你的邮箱。</span>
       ${fallbackLink}
       ${syncButton}
     </div>
   `);
 
-  if (order.pay_channel === "ezboti") {
-    $("#inlineSyncPayBtn")?.addEventListener("click", () => {
-      syncEzbotiPayment(order).catch((error) => showToast(error.message));
-    });
-    startEzbotiWatcher(order, paymentWindow);
-  }
+  $("#inlineSyncPayBtn")?.addEventListener("click", () => {
+    syncExternalPayment(order).catch((error) => showToast(error.message));
+  });
+  startExternalPaymentWatcher(order, paymentWindow);
 }
 
 function parsePaymentPayload(order) {
@@ -388,6 +384,32 @@ async function syncEzbotiPayment(order, options = {}) {
   return checked;
 }
 
+async function syncLookupPayment(order, options = {}) {
+  const checked = await request(`/orders/lookup?order_no=${encodeURIComponent(order.order_no)}&query_code=${encodeURIComponent(order.query_code)}`);
+  if (checked.pay_status === "paid") {
+    setCheckoutPaid(checked);
+    await loadConfig();
+  } else if (["failed", "expired"].includes(checked.pay_status)) {
+    clearCheckoutTimer();
+    setCheckoutNotice(`
+      <div class="checkout-state warning">
+        <strong>暂未确认付款。</strong>
+        <span>如果你已经完成付款，请联系右下角客服核对订单。订单号：${escapeHtml(checked.order_no)}</span>
+      </div>
+    `);
+  } else if (!options.quiet) {
+    showToast("正在等待支付平台确认，请稍后刷新");
+  }
+  return checked;
+}
+
+function syncExternalPayment(order, options = {}) {
+  if (order.pay_channel === "ezboti") {
+    return syncEzbotiPayment(order, options);
+  }
+  return syncLookupPayment(order, options);
+}
+
 async function cancelPendingOrder(order) {
   const cancelled = await request(`/orders/${encodeURIComponent(order.order_no)}/cancel?query_code=${encodeURIComponent(order.query_code)}`, {
     method: "POST",
@@ -406,25 +428,32 @@ async function cancelPendingOrder(order) {
   await loadConfig();
 }
 
-function startEzbotiWatcher(order, paymentWindow) {
+function startExternalPaymentWatcher(order, paymentWindow) {
   let attempts = 0;
   let checking = false;
+  const cancelWhenPaymentWindowClosed = order.pay_channel === "ezboti";
   state.checkoutTimer = window.setInterval(async () => {
     if (checking) return;
     attempts += 1;
     checking = true;
     try {
-      const checked = await syncEzbotiPayment(order, { quiet: true });
+      const checked = await syncExternalPayment(order, { quiet: true });
       if (checked.pay_status === "paid") return;
-      if (paymentWindow && paymentWindow.closed) {
+      if (cancelWhenPaymentWindowClosed && paymentWindow && paymentWindow.closed) {
         await cancelPendingOrder(order);
         return;
       }
-      if (attempts >= 36) {
+      if (attempts >= 120) {
         clearCheckoutTimer();
+        setCheckoutNotice(`
+          <div class="checkout-state warning">
+            <strong>还没有收到支付平台确认。</strong>
+            <span>如果你已经付款，稍后会自动发货到邮箱；也可以联系右下角客服核对。</span>
+          </div>
+        `);
       }
     } catch (error) {
-      if (paymentWindow && paymentWindow.closed) {
+      if (cancelWhenPaymentWindowClosed && paymentWindow && paymentWindow.closed) {
         try {
           await cancelPendingOrder(order);
         } catch (cancelError) {
@@ -468,21 +497,13 @@ function renderPayAction(order) {
   if (order.pay_body && /^https?:\/\//i.test(order.pay_body)) {
     area.innerHTML = `
       <a class="button primary wide" href="${escapeHtml(order.pay_body)}" target="_blank" rel="noopener">前往支付页面</a>
-      ${order.pay_channel === "ezboti" ? `<button id="ezbotiSyncPayBtn" class="button quiet wide" type="button">我已支付，检查支付状态</button>` : ""}
+      <button id="externalSyncPayBtn" class="button quiet wide" type="button">我已支付，检查支付状态</button>
     `;
-    if (order.pay_channel === "ezboti") {
-      $("#ezbotiSyncPayBtn").addEventListener("click", async () => {
-        const checked = await request(`/payments/ezboti/sync/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
-          method: "POST",
-        });
-        if ($("#createdPayStatus")) $("#createdPayStatus").textContent = checked.pay_status;
-        if (checked.delivery_result && $("#lookupResult")) {
-          $("#lookupResult").innerHTML = renderOrderCard(checked);
-        }
-        await loadConfig();
-        showToast(checked.pay_status === "paid" ? "支付已确认，已自动发货" : "暂未检测到支付成功，请稍后再试");
-      });
-    }
+    $("#externalSyncPayBtn").addEventListener("click", async () => {
+      const checked = await syncExternalPayment(order);
+      if ($("#createdPayStatus")) $("#createdPayStatus").textContent = checked.pay_status;
+      if ($("#lookupResult")) $("#lookupResult").innerHTML = renderOrderCard(checked);
+    });
     return;
   }
   area.innerHTML = `
@@ -506,11 +527,51 @@ async function handleLookup(event) {
   }
 }
 
+function renderTokenResult(order) {
+  let hint = `<div class="checkout-state warning"><strong>正在等待支付平台确认。</strong><span>如果你已经完成付款，请保持此页打开；确认后会自动发货到邮箱。</span></div>`;
+  if (order.pay_status === "paid") {
+    hint = `<div class="checkout-state success"><strong>支付已确认。</strong><span>账号密码会发送到你填写的邮箱，请留意收件箱和垃圾邮件。</span></div>`;
+  } else if (["failed", "expired"].includes(order.pay_status)) {
+    hint = `<div class="checkout-state warning"><strong>暂未确认付款。</strong><span>如果你已经完成付款，请联系右下角客服核对订单。订单号：${escapeHtml(order.order_no)}</span></div>`;
+  }
+  return `${hint}${renderOrderCard(order)}`;
+}
+
+function startTokenWatcher(token) {
+  let attempts = 0;
+  let checking = false;
+  clearCheckoutTimer();
+  state.checkoutTimer = window.setInterval(async () => {
+    if (checking) return;
+    attempts += 1;
+    checking = true;
+    try {
+      const data = await request(`/orders/token/${encodeURIComponent(token)}`);
+      $("#tokenResult").innerHTML = renderTokenResult(data);
+      if (data.pay_status === "paid") {
+        clearCheckoutTimer();
+        showToast("支付已确认，已自动发货");
+      } else if (["failed", "expired"].includes(data.pay_status) || attempts >= 120) {
+        clearCheckoutTimer();
+      }
+    } catch (error) {
+      clearCheckoutTimer();
+      $("#tokenResult").innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    } finally {
+      checking = false;
+    }
+  }, 5000);
+}
+
 async function showTokenView(token) {
   setView("tokenView");
+  clearCheckoutTimer();
   try {
     const data = await request(`/orders/token/${encodeURIComponent(token)}`);
-    $("#tokenResult").innerHTML = renderOrderCard(data);
+    $("#tokenResult").innerHTML = renderTokenResult(data);
+    if (!["paid", "failed", "expired"].includes(data.pay_status)) {
+      startTokenWatcher(token);
+    }
   } catch (error) {
     $("#tokenResult").innerHTML = `<p>${escapeHtml(error.message)}</p>`;
   }

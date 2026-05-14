@@ -290,7 +290,7 @@ PAY188_SECRET_KEY=你的商户密钥
 PAY188_PAYMENT_METHOD=fiat_alipay
 PAY188_COIN_TYPE=
 PAY188_NOTIFY_URL=https://你的域名/api/payments/pay188/notify
-PAY188_RETURN_URL=https://你的域名/
+PAY188_RETURN_URL=
 PAY188_REQUEST_TIMEOUT_SECONDS=15
 ```
 
@@ -306,6 +306,7 @@ PAY188_REQUEST_TIMEOUT_SECONDS=15
 - 创建支付订单：`POST {PAY188_GATEWAY_URL}`
 - 业务订单号：`merchantOrderId`
 - 回调入口：`/api/payments/pay188/notify`
+- 创建支付订单时，后端会给 188Pay 传入每笔订单专属的 `returnUrl=/order/{token}`，用户从支付页返回后会自动轮询支付状态。
 - 下单签名：按参数名排序后拼接 `&key=商户密钥`，MD5 小写。
 - 回调验签：按参数名排序后拼接 `&key=商户密钥`，MD5 后和回调 `sign` 比对。
 - 回调验签通过后，会把订单状态更新为 `paid`，然后自动扣库存、写入交付结果并发送邮件。
