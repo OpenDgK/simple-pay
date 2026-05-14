@@ -94,6 +94,13 @@ def safe_callback_payload(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
+def json_amount_value(amount: Decimal) -> int | float:
+    quantized = amount.quantize(Decimal("0.01"))
+    if quantized == quantized.to_integral_value():
+        return int(quantized)
+    return float(f"{quantized:.2f}")
+
+
 def standard_gateway_url(url: str) -> str:
     clean_url = url.rstrip("/")
     parts = urlsplit(clean_url)
@@ -141,7 +148,7 @@ class Pay188Client:
         payload: dict[str, Any] = {
             "merchantId": self.merchant_id,
             "merchantOrderId": order_no,
-            "amount": f"{amount:.2f}",
+            "amount": json_amount_value(amount),
             "coinType": coin_type,
             "notifyUrl": settings.effective_pay188_notify_url,
             "returnUrl": return_url or settings.effective_pay188_return_url,
@@ -154,6 +161,9 @@ class Pay188Client:
             follow_redirects=False,
         ) as client:
             response = await client.post(self.gateway_url, json=payload)
+
+        if response.status_code >= 400:
+            raise RuntimeError(f"188Pay create payment HTTP {response.status_code}: {response.text[:800]}")
 
         if response.status_code in {301, 302, 303, 307, 308}:
             location = response.headers.get("location")
