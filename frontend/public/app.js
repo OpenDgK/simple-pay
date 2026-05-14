@@ -22,6 +22,8 @@ const state = {
   adminProducts: [],
   adminInventory: [],
   adminToken: localStorage.getItem("sop_admin_token") || "",
+  adminOrderCategory: "attention",
+  ordersCollapsed: false,
   selectedOrder: null,
   checkoutTimer: null,
   paymentOrder: null,
@@ -88,13 +90,37 @@ function moneyText(cents) {
 
 function statusBadge(value) {
   const safe = value || "pending";
-  return `<span class="status ${safe}">${safe}</span>`;
+  return `<span class="status ${safe}">${escapeHtml(statusText(safe))}</span>`;
 }
 
 function emailBadge(order) {
-  if (order.email_sent_at) return `<span class="status delivered">sent</span>`;
-  if (order.email_error) return `<span class="status failed" title="${escapeHtml(order.email_error)}">failed</span>`;
-  return `<span class="status pending">pending</span>`;
+  if (order.email_sent_at && !order.email_error) return `<span class="status delivered">已发送</span>`;
+  if (order.email_error) return `<span class="status failed" title="${escapeHtml(order.email_error)}">发送失败</span>`;
+  return `<span class="status pending">未发送</span>`;
+}
+
+const STATUS_TEXT = {
+  pending: "未付款",
+  reviewing: "待人工确认",
+  paid: "已支付",
+  failed: "支付失败",
+  expired: "已过期",
+  processing: "处理中",
+  delivered: "已发货",
+  cancelled: "已取消",
+  available: "可售",
+  reserved: "已锁定",
+  sold: "已售出",
+  disabled: "已停售",
+};
+
+function statusText(value) {
+  return STATUS_TEXT[value] || value || "未付款";
+}
+
+function setStatusText(selector, value) {
+  const el = $(selector);
+  if (el) el.textContent = statusText(value);
 }
 
 function selectedProduct() {
@@ -184,15 +210,15 @@ function productIntro(product) {
   if (product.description) return product.description;
   const name = String(product.name || "");
   if (/team/i.test(name)) {
-    return "适合团队协作使用，付款确认后从 Team 库存发货到邮箱。";
+    return "适合团队协作使用，支付完成后从 Team 库存发货到邮箱。";
   }
-  return "适合个人使用，付款确认后从 PLUS 库存发货到邮箱。";
+  return "适合个人使用，支付完成后从 PLUS 库存发货到邮箱。";
 }
 
 function productFeatures(product) {
   const name = String(product.name || "");
   const plan = /team/i.test(name) ? "Team 一月" : /plus/i.test(name) ? "PLUS 一月" : "一月套餐";
-  return [plan, "独立库存发货", "邮箱接收账号密码"];
+  return [plan, "支付完成自动发货", "邮箱接收账号密码"];
 }
 
 function submitButtonText(product) {
@@ -443,7 +469,7 @@ async function submitManualPayment(order) {
     const actionArea = $("#payActionArea");
     if (notice && !notice.hidden) notice.innerHTML = submitted;
     if (actionArea) actionArea.innerHTML = submitted;
-    if ($("#createdPayStatus")) $("#createdPayStatus").textContent = reviewing.pay_status;
+    setStatusText("#createdPayStatus", reviewing.pay_status);
     if ($("#lookupResult")) $("#lookupResult").innerHTML = renderOrderCard(reviewing);
     await loadConfig();
     showToast("已提交付款确认，等待管理员处理");
@@ -582,7 +608,7 @@ function renderPayAction(order) {
       const paid = await request(`/payments/mock/${encodeURIComponent(order.order_no)}?query_code=${encodeURIComponent(order.query_code)}`, {
         method: "POST",
       });
-      if ($("#createdPayStatus")) $("#createdPayStatus").textContent = paid.pay_status;
+      setStatusText("#createdPayStatus", paid.pay_status);
       if (paid.delivery_result && $("#lookupResult")) {
         $("#lookupResult").innerHTML = renderOrderCard(paid);
       }
@@ -604,7 +630,7 @@ function renderPayAction(order) {
     $("#tokenOpenPayBtn").addEventListener("click", () => openPaymentModal(order.pay_body, order));
     $("#externalSyncPayBtn").addEventListener("click", async () => {
       const checked = await syncExternalPayment(order);
-      if ($("#createdPayStatus")) $("#createdPayStatus").textContent = checked.pay_status;
+      setStatusText("#createdPayStatus", checked.pay_status);
       if ($("#lookupResult")) $("#lookupResult").innerHTML = renderOrderCard(checked);
     });
     return;
@@ -692,7 +718,7 @@ function setupMockPayView() {
         { method: "POST" },
       );
       $("#mockPayResult").innerHTML = renderOrderCard(data);
-      showToast("支付状态已更新为 paid");
+      showToast("支付状态已更新为已支付");
     } catch (error) {
       $("#mockPayResult").innerHTML = `<p>${escapeHtml(error.message)}</p>`;
     }
@@ -724,6 +750,64 @@ function renderAdminAuth() {
   $("#adminLogoutBtn").hidden = !loggedIn;
 }
 
+const ORDER_CATEGORIES = [
+  { key: "attention", label: "待处理" },
+  { key: "success", label: "已完成" },
+  { key: "unsuccessful", label: "未成功" },
+  { key: "all", label: "全部" },
+];
+
+function orderNeedsAttention(order) {
+  if (order.pay_status === "reviewing") return true;
+  return order.pay_status === "paid" && (
+    order.delivery_status !== "delivered" ||
+    Boolean(order.email_error) ||
+    !order.email_sent_at
+  );
+}
+
+function orderSucceeded(order) {
+  return order.pay_status === "paid" &&
+    order.delivery_status === "delivered" &&
+    Boolean(order.email_sent_at) &&
+    !order.email_error;
+}
+
+function orderUnsuccessful(order) {
+  return ["pending", "failed", "expired"].includes(order.pay_status) || order.delivery_status === "cancelled";
+}
+
+function orderMatchesCategory(order, category) {
+  if (category === "attention") return orderNeedsAttention(order);
+  if (category === "success") return orderSucceeded(order);
+  if (category === "unsuccessful") return orderUnsuccessful(order);
+  return true;
+}
+
+function renderOrderCategoryTabs(items) {
+  const tabs = $("#orderCategoryTabs");
+  if (!tabs) return;
+  const counts = Object.fromEntries(ORDER_CATEGORIES.map((item) => [item.key, 0]));
+  items.forEach((order) => {
+    ORDER_CATEGORIES.forEach((category) => {
+      if (orderMatchesCategory(order, category.key)) counts[category.key] += 1;
+    });
+  });
+  tabs.innerHTML = ORDER_CATEGORIES.map((category) => `
+    <button class="order-category-tab${state.adminOrderCategory === category.key ? " active" : ""}" type="button" data-order-category="${category.key}">
+      <span>${escapeHtml(category.label)}</span>
+      <b>${escapeHtml(counts[category.key])}</b>
+    </button>
+  `).join("");
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
 async function loadOrders() {
   if (!state.adminToken) return;
   const params = new URLSearchParams();
@@ -734,7 +818,16 @@ async function loadOrders() {
   if (payStatus) params.set("pay_status", payStatus);
   if (deliveryStatus) params.set("delivery_status", deliveryStatus);
   const data = await request(`${state.config.adminApiPrefix}/orders?${params.toString()}`, { admin: true });
-  const rows = data.items.map((order) => `
+  const allItems = data.items || [];
+  renderOrderCategoryTabs(allItems);
+  const filteredItems = allItems.filter((order) => orderMatchesCategory(order, state.adminOrderCategory));
+  const visibleItems = filteredItems.slice(0, 50);
+  const currentCategory = ORDER_CATEGORIES.find((item) => item.key === state.adminOrderCategory) || ORDER_CATEGORIES[0];
+  const hintExtra = filteredItems.length > visibleItems.length ? `，仅显示最近 ${visibleItems.length} 条` : "";
+  $("#orderListHint").textContent = `${currentCategory.label}：${filteredItems.length} 条（当前筛选共 ${allItems.length} 条${hintExtra}）`;
+  $("#ordersTableWrap").hidden = state.ordersCollapsed;
+  $("#toggleOrdersBtn").textContent = state.ordersCollapsed ? "展开列表" : "收起列表";
+  const rows = visibleItems.map((order) => `
     <tr data-order="${escapeHtml(order.order_no)}">
       <td><strong>${escapeHtml(order.order_no)}</strong><br><small>${escapeHtml(order.product_name)}</small></td>
       <td>${escapeHtml(order.contact)}</td>
@@ -743,7 +836,7 @@ async function loadOrders() {
       <td>${statusBadge(order.delivery_status)}</td>
       <td>${emailBadge(order)}</td>
       <td>${order.has_upload ? `<button class="button quiet" data-download="${escapeHtml(order.order_no)}" type="button">下载</button>` : "无"}</td>
-      <td>${escapeHtml(order.created_at || "")}</td>
+      <td>${escapeHtml(formatDateTime(order.created_at))}</td>
     </tr>
   `).join("");
   $("#ordersTableBody").innerHTML = rows || `<tr><td colspan="8">暂无订单</td></tr>`;
@@ -753,7 +846,7 @@ async function selectOrder(orderNo) {
   const order = await request(`${state.config.adminApiPrefix}/orders/${encodeURIComponent(orderNo)}`, { admin: true });
   state.selectedOrder = order;
   $("#deliveryForm").hidden = false;
-  $("#selectedOrderTitle").textContent = `${order.order_no} · ${order.contact}`;
+  $("#selectedOrderTitle").textContent = `${order.order_no} · ${order.contact} · ${statusText(order.pay_status)} / ${statusText(order.delivery_status)}`;
   const form = $("#deliveryForm");
   form.pay_status.value = order.pay_status;
   form.delivery_status.value = order.delivery_status;
@@ -986,6 +1079,16 @@ function setupAdminEvents() {
   });
   $("#adminPayStatus").addEventListener("change", () => loadOrders().catch((error) => showToast(error.message)));
   $("#adminDeliveryStatus").addEventListener("change", () => loadOrders().catch((error) => showToast(error.message)));
+  $("#orderCategoryTabs").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-order-category]");
+    if (!button) return;
+    state.adminOrderCategory = button.dataset.orderCategory;
+    loadOrders().catch((error) => showToast(error.message));
+  });
+  $("#toggleOrdersBtn").addEventListener("click", () => {
+    state.ordersCollapsed = !state.ordersCollapsed;
+    loadOrders().catch((error) => showToast(error.message));
+  });
   $("#deliveryForm").addEventListener("submit", handleDeliverySave);
   $("#productForm").addEventListener("submit", (event) => handleProductSave(event).catch((error) => showToast(error.message)));
   $("#inventoryBulkForm").addEventListener("submit", (event) => handleInventoryBulkSave(event).catch((error) => showToast(error.message)));

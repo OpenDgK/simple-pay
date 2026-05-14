@@ -59,16 +59,16 @@ from .xunhupay import (
 app = FastAPI(title=settings.app_name)
 
 DEFAULT_CONTENT: dict[str, str] = {
-    "heroBadge": "自助开通 · 在线支付",
-    "feature1": "下单后自动生成订单号",
-    "feature2": "支持微信 / 支付宝支付",
-    "feature3": "确认后 10 分钟内发货",
-    "flowTitle": "三步完成开通",
-    "flowIntro": "选择商品、填写邮箱、完成支付后系统自动发货。",
-    "step1Title": "选择商品",
-    "step1Body": "选择需要购买的商品，价格由管理员在后台设置。",
+    "heroBadge": "自动发货 · 邮箱收货",
+    "feature1": "支付完成后自动发货",
+    "feature2": "账号密码发送到邮箱",
+    "feature3": "无库存时自动售罄",
+    "flowTitle": "三步自动开通",
+    "flowIntro": "选择套餐、填写邮箱并完成支付，系统会自动发货到邮箱。",
+    "step1Title": "选择套餐",
+    "step1Body": "Plus 或 Team 有库存时可购买，售罄会自动禁用。",
     "step2Title": "填写邮箱",
-    "step2Body": "只需要提供邮箱，用于接收账号和密码。",
+    "step2Body": "用于接收账号密码，请确认邮箱可正常收信。",
     "step3Title": "支付完成自动发货",
     "step3Body": "支付完成后，系统会自动把货物发送到您的邮箱。",
 }

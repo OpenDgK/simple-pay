@@ -9,7 +9,7 @@ class AdminLoginRequest(BaseModel):
 
 
 class DeliveryUpdateRequest(BaseModel):
-    pay_status: str | None = Field(default=None, pattern="^(pending|reviewing|paid|failed)$")
+    pay_status: str | None = Field(default=None, pattern="^(pending|reviewing|paid|failed|expired)$")
     delivery_status: str = Field(pattern="^(pending|processing|delivered|cancelled)$")
     delivery_result: str | None = Field(default=None, max_length=10000)
 

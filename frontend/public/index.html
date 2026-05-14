@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-7" />
-    <script defer src="/config.js?v=20260514-7"></script>
-    <script defer src="/app.js?v=20260514-7"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-8" />
+    <script defer src="/config.js?v=20260514-8"></script>
+    <script defer src="/app.js?v=20260514-8"></script>
   </head>
   <body>
     <div class="page">
@@ -17,7 +17,7 @@
           </div>
           <section class="hero" aria-label="商品购买">
             <div class="hero-copy">
-              <div id="heroBadge" class="badge">自助开通 · 在线支付</div>
+              <div id="heroBadge" class="badge">自动发货 · 邮箱收货</div>
               <h1 id="productTitle">PLUS一月</h1>
               <div class="stats" aria-label="商品摘要">
                 <div class="stat">
@@ -34,9 +34,9 @@
                 </div>
               </div>
               <div class="feature-stack">
-                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature1">下单后自动生成订单号</span></div>
-                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature2">支持微信 / 支付宝支付</span></div>
-                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature3">确认后 10 分钟内发货</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature1">支付完成后自动发货</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature2">账号密码发送到邮箱</span></div>
+                <div class="feature-item"><span class="feature-icon">✓</span> <span id="feature3">无库存时自动售罄</span></div>
               </div>
             </div>
 
@@ -52,19 +52,19 @@
 
           <section id="flow" class="steps-section">
             <div class="section-title centered">
-              <h2 id="flowTitle">三步完成开通</h2>
-              <p id="flowIntro">选择商品、填写邮箱、完成支付后系统自动发货。</p>
+              <h2 id="flowTitle">三步自动开通</h2>
+              <p id="flowIntro">选择套餐、填写邮箱并完成支付，系统会自动发货到邮箱。</p>
             </div>
             <div class="steps-grid">
               <article class="step-card">
                 <span class="step-number">1</span>
-                <h3 id="step1Title">选择商品</h3>
-                <p id="step1Body">选择需要购买的商品，价格由管理员在后台设置。</p>
+                <h3 id="step1Title">选择套餐</h3>
+                <p id="step1Body">Plus 或 Team 有库存时可购买，售罄会自动禁用。</p>
               </article>
               <article class="step-card">
                 <span class="step-number">2</span>
                 <h3 id="step2Title">填写邮箱</h3>
-                <p id="step2Body">只需要提供邮箱，用于接收账号和密码。</p>
+                <p id="step2Body">用于接收账号密码，请确认邮箱可正常收信。</p>
               </article>
               <article class="step-card">
                 <span class="step-number">3</span>
@@ -134,30 +134,36 @@
 
               <div id="adminWorkspace" hidden>
                 <section class="panel admin-section">
-                  <div class="section-title">
-                    <h2>订单列表</h2>
-                    <p>点击订单行后，可以在下方编辑交付结果。</p>
+                  <div class="section-title row-title">
+                    <div>
+                      <h2>订单处理</h2>
+                      <p>默认只显示需要处理的订单，未付款和失败订单会归到“未成功”。</p>
+                    </div>
+                    <button id="toggleOrdersBtn" class="button quiet" type="button">收起列表</button>
                   </div>
+                  <div id="orderCategoryTabs" class="order-category-tabs" aria-label="订单分类"></div>
                   <div class="admin-toolbar">
                     <input id="adminSearchInput" type="search" placeholder="搜索订单号、邮箱或商品" />
                     <select id="adminPayStatus">
-                      <option value="">支付状态</option>
-                      <option value="pending">pending</option>
-                      <option value="reviewing">reviewing</option>
-                      <option value="paid">paid</option>
-                      <option value="failed">failed</option>
+                      <option value="">全部支付状态</option>
+                      <option value="pending">未付款</option>
+                      <option value="reviewing">待人工确认</option>
+                      <option value="paid">已支付</option>
+                      <option value="failed">支付失败</option>
+                      <option value="expired">已过期</option>
                     </select>
                     <select id="adminDeliveryStatus">
-                      <option value="">交付状态</option>
-                      <option value="pending">pending</option>
-                      <option value="processing">processing</option>
-                      <option value="delivered">delivered</option>
-                      <option value="cancelled">cancelled</option>
+                      <option value="">全部交付状态</option>
+                      <option value="pending">待发货</option>
+                      <option value="processing">处理中</option>
+                      <option value="delivered">已发货</option>
+                      <option value="cancelled">已取消</option>
                     </select>
                     <button id="refreshOrdersBtn" class="button secondary" type="button">刷新</button>
                   </div>
 
-                  <div class="table-panel">
+                  <div id="orderListHint" class="order-list-hint"></div>
+                  <div id="ordersTableWrap" class="table-panel">
                     <table>
                       <thead>
                         <tr>
@@ -184,19 +190,20 @@
                   <label>
                     支付状态
                     <select name="pay_status">
-                      <option value="pending">pending</option>
-                      <option value="reviewing">reviewing</option>
-                      <option value="paid">paid</option>
-                      <option value="failed">failed</option>
+                      <option value="pending">未付款</option>
+                      <option value="reviewing">待人工确认</option>
+                      <option value="paid">已支付</option>
+                      <option value="failed">支付失败</option>
+                      <option value="expired">已过期</option>
                     </select>
                   </label>
                   <label>
                     交付状态
                     <select name="delivery_status">
-                      <option value="pending">pending</option>
-                      <option value="processing">processing</option>
-                      <option value="delivered">delivered</option>
-                      <option value="cancelled">cancelled</option>
+                      <option value="pending">待发货</option>
+                      <option value="processing">处理中</option>
+                      <option value="delivered">已发货</option>
+                      <option value="cancelled">已取消</option>
                     </select>
                   </label>
                   <label>
