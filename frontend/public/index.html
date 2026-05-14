@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-10" />
-    <script defer src="/config.js?v=20260514-10"></script>
-    <script defer src="/app.js?v=20260514-10"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-12" />
+    <script defer src="/config.js?v=20260514-12"></script>
+    <script defer src="/app.js?v=20260514-12"></script>
   </head>
   <body>
     <div class="page">
@@ -340,6 +340,36 @@
         <footer class="payment-dialog-foot">
           <button id="paymentModalRefresh" class="button secondary" type="button">我已付款，刷新状态</button>
           <button id="paymentModalOpenNew" class="button quiet" type="button">新窗口打开</button>
+        </footer>
+      </section>
+    </div>
+
+    <div id="afterPayNoticeModal" class="notice-modal" hidden>
+      <div class="notice-modal-backdrop"></div>
+      <section class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="afterPayNoticeTitle">
+        <header class="notice-dialog-head">
+          <div>
+            <strong id="afterPayNoticeTitle">支付完成，请先看注意事项</strong>
+            <span>账号密码已自动发送到邮箱，下面内容可以帮助你顺利使用。</span>
+          </div>
+          <button id="afterPayNoticeClose" class="payment-close" type="button" aria-label="关闭注意事项">×</button>
+        </header>
+        <div class="notice-grid">
+          <article class="notice-card">
+            <h3>账号聊天记录 / 项目迁移</h3>
+            <img src="/assets/notice-project-migration.svg" alt="账号聊天记录和项目迁移说明" />
+          </article>
+          <article class="notice-card">
+            <h3>账号辅助邮箱绑定</h3>
+            <img src="/assets/notice-email-binding.svg" alt="账号辅助邮箱绑定说明" />
+          </article>
+          <article class="notice-card">
+            <h3>客服邮箱</h3>
+            <img src="/assets/notice-support-email.svg" alt="客服邮箱 1493719411@qq.com" />
+          </article>
+        </div>
+        <footer class="notice-dialog-foot">
+          <button id="afterPayNoticeOk" class="button primary" type="button">我知道了</button>
         </footer>
       </section>
     </div>

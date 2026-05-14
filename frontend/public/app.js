@@ -192,6 +192,19 @@ function closePaymentModal(options = {}) {
   document.body.classList.remove("payment-open");
 }
 
+function openAfterPayNoticeModal() {
+  const modal = $("#afterPayNoticeModal");
+  if (!modal) return;
+  modal.hidden = false;
+  document.body.classList.add("notice-open");
+}
+
+function closeAfterPayNoticeModal() {
+  const modal = $("#afterPayNoticeModal");
+  if (modal) modal.hidden = true;
+  document.body.classList.remove("notice-open");
+}
+
 function productPlanLabel(product) {
   const name = String(product.name || "");
   if (/team/i.test(name)) return "Team 套餐";
@@ -529,6 +542,7 @@ function setCheckoutPaid(order) {
   if (order.delivery_result && $("#lookupResult")) {
     $("#lookupResult").innerHTML = renderOrderCard(order);
   }
+  openAfterPayNoticeModal();
   showToast("支付已确认，已自动发货");
 }
 
@@ -1162,6 +1176,17 @@ function setupPaymentModalEvents() {
   });
 }
 
+function setupAfterPayNoticeEvents() {
+  $("#afterPayNoticeClose")?.addEventListener("click", closeAfterPayNoticeModal);
+  $("#afterPayNoticeOk")?.addEventListener("click", closeAfterPayNoticeModal);
+  $("#afterPayNoticeModal .notice-modal-backdrop")?.addEventListener("click", closeAfterPayNoticeModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !$("#afterPayNoticeModal")?.hidden) {
+      closeAfterPayNoticeModal();
+    }
+  });
+}
+
 function setupSupportWidget() {
   const button = $("#supportToggle");
   const card = $("#supportCard");
@@ -1201,6 +1226,7 @@ async function boot() {
   }
   $("#lookupForm")?.addEventListener("submit", handleLookup);
   setupPaymentModalEvents();
+  setupAfterPayNoticeEvents();
   setupSupportWidget();
   setupAdminEvents();
   route();

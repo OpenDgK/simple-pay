@@ -43,7 +43,8 @@ body {
   overflow-x: hidden;
 }
 
-body.payment-open {
+body.payment-open,
+body.notice-open {
   overflow: hidden;
 }
 
@@ -1363,6 +1364,115 @@ tbody tr:hover {
   font-weight: 700;
 }
 
+.notice-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.notice-modal[hidden] {
+  display: none;
+}
+
+.notice-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(7px);
+}
+
+.notice-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(1180px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(16, 163, 127, 0.1), transparent 34%),
+    radial-gradient(circle at 92% 0%, rgba(2, 132, 199, 0.12), transparent 36%),
+    #fff;
+  box-shadow: 0 34px 92px rgba(15, 23, 42, 0.34);
+}
+
+.notice-dialog-head,
+.notice-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.notice-dialog-head {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.notice-dialog-head strong,
+.notice-dialog-head span {
+  display: block;
+}
+
+.notice-dialog-head strong {
+  color: var(--primary);
+  font-size: clamp(20px, 3vw, 30px);
+  line-height: 1.14;
+  font-weight: 950;
+}
+
+.notice-dialog-head span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px 20px 6px;
+}
+
+.notice-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(2, 132, 199, 0.14);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+}
+
+.notice-card h3 {
+  margin: 0;
+  color: var(--primary);
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.notice-card img {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.notice-dialog-foot {
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
 .toast {
   position: fixed;
   right: 20px;
@@ -1407,7 +1517,8 @@ tbody tr:hover {
 
   .stats,
   .steps-grid,
-  .faq-grid {
+  .faq-grid,
+  .notice-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1547,6 +1658,34 @@ tbody tr:hover {
   }
 
   .payment-dialog-foot .button {
+    width: 100%;
+  }
+
+  .notice-modal {
+    padding: 8px;
+  }
+
+  .notice-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    border-radius: 20px;
+  }
+
+  .notice-dialog-head,
+  .notice-dialog-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notice-dialog-head {
+    align-items: flex-start;
+  }
+
+  .notice-grid {
+    padding: 14px;
+  }
+
+  .notice-dialog-foot .button {
     width: 100%;
   }
 }
