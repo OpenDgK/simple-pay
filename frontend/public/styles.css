@@ -397,6 +397,27 @@ select {
   opacity: 0.7;
 }
 
+.purchase-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.purchase-summary strong {
+  color: var(--primary);
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.purchase-summary small {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: var(--accent-blue-dark);
+  background: #eff6ff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .product-card-head {
   display: grid;
   gap: 10px;
@@ -981,7 +1002,7 @@ code {
 
 table {
   width: 100%;
-  min-width: 840px;
+  min-width: 940px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -1014,6 +1035,61 @@ tbody tr:hover {
 
 .delivery-panel {
   margin-top: 18px;
+}
+
+.assigned-inventory {
+  margin-top: 16px;
+}
+
+.assigned-inventory-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.assigned-inventory-card.muted {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.assigned-inventory-card strong {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.assigned-inventory-card p {
+  margin: 0;
+}
+
+.assigned-inventory-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.assigned-inventory-card dl div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.assigned-inventory-card dt,
+.assigned-inventory-card dd {
+  margin: 0;
+}
+
+.assigned-inventory-card dt {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.assigned-inventory-card dd {
+  color: var(--primary);
+  font-weight: 850;
+  overflow-wrap: anywhere;
 }
 
 .admin-section {

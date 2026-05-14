@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-8" />
-    <script defer src="/config.js?v=20260514-8"></script>
-    <script defer src="/app.js?v=20260514-8"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-9" />
+    <script defer src="/config.js?v=20260514-9"></script>
+    <script defer src="/app.js?v=20260514-9"></script>
   </head>
   <body>
     <div class="page">
@@ -47,30 +47,6 @@
               </div>
               <div id="productCards" class="product-purchase-grid" aria-live="polite"></div>
               <div id="checkoutNotice" class="checkout-notice" hidden></div>
-            </div>
-          </section>
-
-          <section id="flow" class="steps-section">
-            <div class="section-title centered">
-              <h2 id="flowTitle">三步自动开通</h2>
-              <p id="flowIntro">选择套餐、填写邮箱并完成支付，系统会自动发货到邮箱。</p>
-            </div>
-            <div class="steps-grid">
-              <article class="step-card">
-                <span class="step-number">1</span>
-                <h3 id="step1Title">选择套餐</h3>
-                <p id="step1Body">Plus 或 Team 有库存时可购买，售罄会自动禁用。</p>
-              </article>
-              <article class="step-card">
-                <span class="step-number">2</span>
-                <h3 id="step2Title">填写邮箱</h3>
-                <p id="step2Body">用于接收账号密码，请确认邮箱可正常收信。</p>
-              </article>
-              <article class="step-card">
-                <span class="step-number">3</span>
-                <h3 id="step3Title">支付完成自动发货</h3>
-                <p id="step3Body">支付完成后，系统会自动把货物发送到您的邮箱。</p>
-              </article>
             </div>
           </section>
 
@@ -169,6 +145,7 @@
                         <tr>
                           <th>订单号</th>
                           <th>邮箱</th>
+                          <th>发货账号</th>
                           <th>金额</th>
                           <th>支付</th>
                           <th>交付</th>
@@ -208,8 +185,9 @@
                   </label>
                   <label>
                     交付结果
-                    <textarea name="delivery_result" rows="6" placeholder="填写交付内容、网盘链接、说明或处理进度"></textarea>
+                    <textarea name="delivery_result" rows="6" placeholder="自动发货后会填入账号密码，也可以手动补充说明"></textarea>
                   </label>
+                  <div id="assignedInventoryBox" class="assigned-inventory" hidden></div>
                   <button class="button primary" type="submit">保存交付结果</button>
                 </form>
 

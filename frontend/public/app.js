@@ -225,6 +225,35 @@ function submitButtonText(product) {
   return Number(product.stock_count || 0) > 0 ? `购买 ${product.name}` : "已售罄";
 }
 
+function assignedInventoryText(order) {
+  const item = order.inventory_item;
+  if (!item) return "未分配";
+  return item.account || `库存 #${item.id}`;
+}
+
+function renderAssignedInventory(order) {
+  const item = order.inventory_item;
+  if (!item) {
+    return `
+      <div class="assigned-inventory-card muted">
+        <strong>本单发货账号</strong>
+        <p>暂未分配库存。订单支付成功后，系统会自动锁定并记录发货账号。</p>
+      </div>
+    `;
+  }
+  return `
+    <div class="assigned-inventory-card">
+      <strong>本单发货账号</strong>
+      <dl>
+        <div><dt>账号</dt><dd>${escapeHtml(item.account)}</dd></div>
+        <div><dt>密码</dt><dd>${escapeHtml(item.password)}</dd></div>
+        <div><dt>库存状态</dt><dd>${statusBadge(item.status)}</dd></div>
+        <div><dt>售出时间</dt><dd>${escapeHtml(formatDateTime(item.sold_at) || "未售出")}</dd></div>
+      </dl>
+    </div>
+  `;
+}
+
 function renderProductTabs() {
   const tabs = $("#productTabs");
   if (!tabs) return;
@@ -271,23 +300,14 @@ function renderProductCards() {
   const soldOut = Number(product.stock_count || 0) <= 0;
   const disabled = soldOut ? "disabled" : "";
   const soldOutClass = soldOut ? " sold-out" : "";
-  const features = productFeatures(product).map((feature) => (
-    `<li><span class="mini-check">✓</span>${escapeHtml(feature)}</li>`
-  )).join("");
   box.innerHTML = `
     <form class="product-buy-card hero-card${soldOutClass}" data-product-id="${escapeHtml(product.id)}" enctype="multipart/form-data">
       <input type="hidden" name="product_id" value="${escapeHtml(product.id)}" />
-      <div class="product-card-head">
+      <div class="purchase-summary">
         <span class="product-plan-badge">${escapeHtml(productPlanLabel(product))}</span>
-        <h2>${escapeHtml(product.name)}</h2>
-        <p>${escapeHtml(productIntro(product))}</p>
+        <strong>${escapeHtml(product.name)}</strong>
+        <small>${escapeHtml(productStockText(product))}</small>
       </div>
-      <div class="product-price-line">
-        <strong>${escapeHtml(product.priceText || moneyText(product.amount_cents))}</strong>
-        <em>${escapeHtml(product.currency || "CNY")}</em>
-        <span class="stock-pill">${escapeHtml(productStockText(product))}</span>
-      </div>
-      <ul class="product-intro-list">${features}</ul>
       <label>
         邮箱
         <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required ${disabled} />
@@ -831,6 +851,7 @@ async function loadOrders() {
     <tr data-order="${escapeHtml(order.order_no)}">
       <td><strong>${escapeHtml(order.order_no)}</strong><br><small>${escapeHtml(order.product_name)}</small></td>
       <td>${escapeHtml(order.contact)}</td>
+      <td>${escapeHtml(assignedInventoryText(order))}</td>
       <td>${escapeHtml(order.amount_text)} ${escapeHtml(order.currency)}</td>
       <td>${statusBadge(order.pay_status)}</td>
       <td>${statusBadge(order.delivery_status)}</td>
@@ -839,7 +860,7 @@ async function loadOrders() {
       <td>${escapeHtml(formatDateTime(order.created_at))}</td>
     </tr>
   `).join("");
-  $("#ordersTableBody").innerHTML = rows || `<tr><td colspan="8">暂无订单</td></tr>`;
+  $("#ordersTableBody").innerHTML = rows || `<tr><td colspan="9">暂无订单</td></tr>`;
 }
 
 async function selectOrder(orderNo) {
@@ -851,6 +872,9 @@ async function selectOrder(orderNo) {
   form.pay_status.value = order.pay_status;
   form.delivery_status.value = order.delivery_status;
   form.delivery_result.value = order.delivery_result || "";
+  const inventoryBox = $("#assignedInventoryBox");
+  inventoryBox.hidden = false;
+  inventoryBox.innerHTML = renderAssignedInventory(order);
 }
 
 async function handleDeliverySave(event) {
