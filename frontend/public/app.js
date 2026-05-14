@@ -24,6 +24,7 @@ const state = {
   adminToken: localStorage.getItem("sop_admin_token") || "",
   selectedOrder: null,
   checkoutTimer: null,
+  paymentWindow: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -135,6 +136,51 @@ function clearCheckoutTimer() {
   }
 }
 
+function openPaymentPopup(url = "about:blank") {
+  const width = Math.min(460, Math.max(360, window.screen?.availWidth ? window.screen.availWidth - 32 : 460));
+  const height = Math.min(760, Math.max(560, window.screen?.availHeight ? window.screen.availHeight - 80 : 680));
+  const left = Math.max(0, Math.round(((window.screen?.availWidth || width) - width) / 2));
+  const top = Math.max(0, Math.round(((window.screen?.availHeight || height) - height) / 2));
+  const features = [
+    "popup=yes",
+    `width=${width}`,
+    `height=${height}`,
+    `left=${left}`,
+    `top=${top}`,
+    "resizable=yes",
+    "scrollbars=yes",
+  ].join(",");
+  const paymentWindow = window.open(url, "simple_order_pay_payment", features);
+  if (paymentWindow) {
+    state.paymentWindow = paymentWindow;
+    try {
+      paymentWindow.document.title = "正在打开支付";
+      paymentWindow.document.body.innerHTML = `
+        <div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; padding: 28px; color: #0f172a;">
+          <h2 style="margin: 0 0 10px;">正在打开支付页面</h2>
+          <p style="margin: 0; color: #475569;">请稍候，支付完成后此窗口会自动关闭。</p>
+        </div>
+      `;
+    } catch {
+      // Cross-origin payment pages cannot be modified after navigation.
+    }
+    paymentWindow.focus();
+  }
+  return paymentWindow;
+}
+
+function closePaymentPopup() {
+  const paymentWindow = state.paymentWindow;
+  if (paymentWindow && !paymentWindow.closed) {
+    try {
+      paymentWindow.close();
+    } catch {
+      // Some browsers may block close; the main page still shows the paid state.
+    }
+  }
+  state.paymentWindow = null;
+}
+
 function renderProductOptions() {
   const box = $("#productOptions");
   const button = $("#submitOrderBtn");
@@ -194,7 +240,7 @@ async function handleOrderSubmit(event) {
   event.preventDefault();
   const button = $("#submitOrderBtn");
   const shouldOpenPopup = state.config?.paymentMode && !["mock", "manual"].includes(state.config.paymentMode);
-  const paymentWindow = shouldOpenPopup ? window.open("about:blank", "simple_order_pay_payment") : null;
+  const paymentWindow = shouldOpenPopup ? openPaymentPopup() : null;
   button.disabled = true;
   button.textContent = "正在创建订单...";
   try {
@@ -216,6 +262,7 @@ async function handleOrderSubmit(event) {
     if (paymentWindow && !paymentWindow.closed) {
       paymentWindow.close();
     }
+    if (state.paymentWindow === paymentWindow) state.paymentWindow = null;
     showToast(error.message);
   } finally {
     renderProductOptions();
@@ -236,27 +283,35 @@ function launchCheckout(order, paymentWindow) {
   const paymentUrl = order.pay_body && /^https?:\/\//i.test(order.pay_body) ? order.pay_body : "";
   if (paymentUrl && paymentWindow) {
     paymentWindow.location.href = paymentUrl;
+    paymentWindow.focus();
   } else if (paymentWindow && !paymentWindow.closed) {
     paymentWindow.close();
+    if (state.paymentWindow === paymentWindow) state.paymentWindow = null;
   }
 
   const popupText = paymentUrl && paymentWindow
-    ? "支付窗口已打开，请在新窗口完成付款。"
-    : "浏览器可能拦截了支付窗口，请点击下方按钮继续支付。";
-  const fallbackLink = paymentUrl
-    ? `<a class="button primary wide" href="${escapeHtml(paymentUrl)}" target="_blank" rel="noopener">打开支付页面</a>`
+    ? "支付小窗口已打开，请在里面完成付款。"
+    : "浏览器可能拦截了支付小窗口，请点击下方按钮继续支付。";
+  const fallbackAction = paymentUrl
+    ? `<button id="reopenPaymentBtn" class="button primary wide" type="button">打开支付小窗口</button>`
     : `<div class="token-box"><span>支付参数</span><code>${escapeHtml(order.pay_body || "支付订单已创建，请稍后重试。")}</code></div>`;
   const syncButton = `<button id="inlineSyncPayBtn" class="button secondary wide" type="button">我已完成支付，刷新状态</button>`;
 
   setCheckoutNotice(`
     <div class="checkout-state">
       <strong>${popupText}</strong>
-      <span>这个页面会自动检查支付状态。付款确认后会发送账号密码到你的邮箱。</span>
-      ${fallbackLink}
+      <span>请不要关闭本页面。系统会自动检查支付状态，确认后关闭支付小窗口并发送账号密码到邮箱。</span>
+      ${fallbackAction}
       ${syncButton}
     </div>
   `);
 
+  $("#reopenPaymentBtn")?.addEventListener("click", () => {
+    const reopened = openPaymentPopup(paymentUrl);
+    if (!reopened) {
+      showToast("浏览器拦截了弹窗，请允许本站弹出窗口");
+    }
+  });
   $("#inlineSyncPayBtn")?.addEventListener("click", () => {
     syncExternalPayment(order).catch((error) => showToast(error.message));
   });
@@ -359,6 +414,7 @@ function renderMockCheckout(order) {
 
 function setCheckoutPaid(order) {
   clearCheckoutTimer();
+  closePaymentPopup();
   setCheckoutNotice(`
     <div class="checkout-state success">
       <strong>支付已确认，账号密码已发送到邮箱。</strong>
