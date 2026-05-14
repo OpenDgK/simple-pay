@@ -18,6 +18,7 @@ const state = {
   apiBase: runtimeConfig.apiBaseUrl || "/api",
   config: null,
   products: [],
+  selectedProductId: null,
   adminProducts: [],
   adminInventory: [],
   adminToken: localStorage.getItem("sop_admin_token") || "",
@@ -96,8 +97,17 @@ function emailBadge(order) {
   return `<span class="status pending">pending</span>`;
 }
 
-function primaryProduct() {
-  return state.products.find((item) => Number(item.stock_count || 0) > 0) || state.products[0] || null;
+function selectedProduct() {
+  return state.products.find((item) => String(item.id) === String(state.selectedProductId)) || null;
+}
+
+function ensureSelectedProduct() {
+  if (!state.products.length) return null;
+  const current = selectedProduct();
+  if (current) return current;
+  const next = state.products.find((item) => Number(item.stock_count || 0) > 0) || state.products[0];
+  state.selectedProductId = next.id;
+  return next;
 }
 
 function productStockText(product) {
@@ -115,7 +125,7 @@ function applyContent(content = {}) {
 }
 
 function updateHeroProduct() {
-  const product = primaryProduct();
+  const product = ensureSelectedProduct();
   if (!product) return;
   $("#productTitle").textContent = product.name;
   $("#priceText").textContent = product.priceText || moneyText(product.amount_cents);
@@ -163,6 +173,13 @@ function productPlanLabel(product) {
   return "可购买套餐";
 }
 
+function productTabLabel(product) {
+  const name = String(product.name || "");
+  if (/team/i.test(name)) return "Team";
+  if (/plus/i.test(name)) return "Plus";
+  return name || "套餐";
+}
+
 function productIntro(product) {
   if (product.description) return product.description;
   const name = String(product.name || "");
@@ -182,42 +199,76 @@ function submitButtonText(product) {
   return Number(product.stock_count || 0) > 0 ? `购买 ${product.name}` : "已售罄";
 }
 
+function renderProductTabs() {
+  const tabs = $("#productTabs");
+  if (!tabs) return;
+  if (!state.products.length) {
+    tabs.innerHTML = "";
+    return;
+  }
+  const currentProduct = ensureSelectedProduct();
+  tabs.innerHTML = state.products.map((product) => {
+    const isActive = currentProduct && String(product.id) === String(currentProduct.id);
+    const soldOut = Number(product.stock_count || 0) <= 0;
+    const soldOutBadge = soldOut ? `<span class="tab-sold-out">已售罄</span>` : "";
+    return `
+      <button
+        class="product-tab${isActive ? " active" : ""}"
+        type="button"
+        role="tab"
+        aria-selected="${isActive ? "true" : "false"}"
+        data-product-id="${escapeHtml(product.id)}"
+      >
+        <span>${escapeHtml(productTabLabel(product))}</span>
+        ${soldOutBadge}
+      </button>
+    `;
+  }).join("");
+  tabs.querySelectorAll(".product-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedProductId = button.dataset.productId;
+      renderProductCards();
+    });
+  });
+}
+
 function renderProductCards() {
   const box = $("#productCards");
   if (!box) return;
   if (!state.products.length) {
     box.innerHTML = `<div class="empty-state">暂无可购买商品，请联系管理员。</div>`;
+    renderProductTabs();
     return;
   }
-  box.innerHTML = state.products.map((product) => {
-    const soldOut = Number(product.stock_count || 0) <= 0;
-    const disabled = soldOut ? "disabled" : "";
-    const soldOutClass = soldOut ? " sold-out" : "";
-    const features = productFeatures(product).map((feature) => (
-      `<li><span class="mini-check">✓</span>${escapeHtml(feature)}</li>`
-    )).join("");
-    return `
-      <form class="product-buy-card hero-card${soldOutClass}" data-product-id="${escapeHtml(product.id)}" enctype="multipart/form-data">
-        <input type="hidden" name="product_id" value="${escapeHtml(product.id)}" />
-        <div class="product-card-head">
-          <span class="product-plan-badge">${escapeHtml(productPlanLabel(product))}</span>
-          <h2>${escapeHtml(product.name)}</h2>
-          <p>${escapeHtml(productIntro(product))}</p>
-        </div>
-        <div class="product-price-line">
-          <strong>${escapeHtml(product.priceText || moneyText(product.amount_cents))}</strong>
-          <em>${escapeHtml(product.currency || "CNY")}</em>
-          <span class="stock-pill">${escapeHtml(productStockText(product))}</span>
-        </div>
-        <ul class="product-intro-list">${features}</ul>
-        <label>
-          邮箱
-          <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required ${disabled} />
-        </label>
-        <button class="button primary wide" type="submit" ${disabled}>${escapeHtml(submitButtonText(product))}</button>
-      </form>
-    `;
-  }).join("");
+  const product = ensureSelectedProduct();
+  renderProductTabs();
+  const soldOut = Number(product.stock_count || 0) <= 0;
+  const disabled = soldOut ? "disabled" : "";
+  const soldOutClass = soldOut ? " sold-out" : "";
+  const features = productFeatures(product).map((feature) => (
+    `<li><span class="mini-check">✓</span>${escapeHtml(feature)}</li>`
+  )).join("");
+  box.innerHTML = `
+    <form class="product-buy-card hero-card${soldOutClass}" data-product-id="${escapeHtml(product.id)}" enctype="multipart/form-data">
+      <input type="hidden" name="product_id" value="${escapeHtml(product.id)}" />
+      <div class="product-card-head">
+        <span class="product-plan-badge">${escapeHtml(productPlanLabel(product))}</span>
+        <h2>${escapeHtml(product.name)}</h2>
+        <p>${escapeHtml(productIntro(product))}</p>
+      </div>
+      <div class="product-price-line">
+        <strong>${escapeHtml(product.priceText || moneyText(product.amount_cents))}</strong>
+        <em>${escapeHtml(product.currency || "CNY")}</em>
+        <span class="stock-pill">${escapeHtml(productStockText(product))}</span>
+      </div>
+      <ul class="product-intro-list">${features}</ul>
+      <label>
+        邮箱
+        <input name="contact" type="email" maxlength="255" placeholder="you@example.com" required ${disabled} />
+      </label>
+      <button class="button primary wide" type="submit" ${disabled}>${escapeHtml(submitButtonText(product))}</button>
+    </form>
+  `;
   box.querySelectorAll(".product-buy-card").forEach((form) => {
     form.addEventListener("submit", handleOrderSubmit);
   });

@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-5" />
-    <script defer src="/config.js?v=20260514-5"></script>
-    <script defer src="/app.js?v=20260514-5"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-6" />
+    <script defer src="/config.js?v=20260514-6"></script>
+    <script defer src="/app.js?v=20260514-6"></script>
   </head>
   <body>
     <div class="page">
@@ -40,8 +40,9 @@
             <div class="hero-right product-buy-zone">
               <div class="section-title product-zone-title">
                 <h2 id="order">选择套餐</h2>
-                <p>每个套餐单独购买。填写邮箱后，确认收款会自动发送账号密码。</p>
+                <p>先切换套餐，再填写邮箱购买。确认收款后会自动发送账号密码。</p>
               </div>
+              <div id="productTabs" class="product-tabs" role="tablist" aria-label="选择套餐"></div>
               <div id="productCards" class="product-purchase-grid" aria-live="polite"></div>
               <div id="checkoutNotice" class="checkout-notice" hidden></div>
             </div>

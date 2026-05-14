@@ -322,6 +322,55 @@ select {
   padding: 0 2px;
 }
 
+.product-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.1);
+}
+
+.product-tab {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  color: #6b7280;
+  background: transparent;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 900;
+  transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.product-tab:hover {
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.product-tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, #3b82c4, var(--accent-blue));
+  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.28);
+}
+
+.tab-sold-out {
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #fff;
+  background: #c2413b;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .product-purchase-grid {
   display: grid;
   gap: 18px;
@@ -1273,6 +1322,7 @@ tbody tr:hover {
   }
 
   .hero-card .section-title,
+  .product-tabs,
   .product-buy-card > label,
   .product-buy-card .button {
     width: 100%;
@@ -1291,6 +1341,16 @@ tbody tr:hover {
   .product-price-line {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .product-tab {
+    min-height: 44px;
+    font-size: 18px;
+  }
+
+  .tab-sold-out {
+    padding: 2px 6px;
+    font-size: 11px;
   }
 
   .stock-pill {
