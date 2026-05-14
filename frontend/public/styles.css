@@ -43,6 +43,10 @@ body {
   overflow-x: hidden;
 }
 
+body.payment-open {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -997,6 +1001,103 @@ tbody tr:hover {
   overflow-wrap: anywhere;
 }
 
+.payment-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.payment-modal[hidden] {
+  display: none;
+}
+
+.payment-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.payment-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(460px, calc(100vw - 24px));
+  height: min(780px, calc(100vh - 24px));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.32);
+}
+
+.payment-dialog-head,
+.payment-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.payment-dialog-head {
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-dialog-head strong,
+.payment-dialog-head span {
+  display: block;
+}
+
+.payment-dialog-head strong {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.payment-dialog-head span {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.payment-close {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.payment-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.payment-dialog-foot {
+  border-top: 1px solid var(--line);
+}
+
+.payment-dialog-foot .button {
+  min-height: 42px;
+  padding: 0 14px;
+}
+
 .toast {
   position: fixed;
   right: 20px;
@@ -1142,5 +1243,24 @@ tbody tr:hover {
   .order-meta div {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .payment-modal {
+    padding: 8px;
+  }
+
+  .payment-dialog {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    border-radius: 18px;
+  }
+
+  .payment-dialog-foot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .payment-dialog-foot .button {
+    width: 100%;
   }
 }

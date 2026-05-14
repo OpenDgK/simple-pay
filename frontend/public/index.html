@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-2" />
-    <script defer src="/config.js?v=20260514-2"></script>
-    <script defer src="/app.js?v=20260514-2"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-3" />
+    <script defer src="/config.js?v=20260514-3"></script>
+    <script defer src="/app.js?v=20260514-3"></script>
   </head>
   <body>
     <div class="page">
@@ -318,6 +318,24 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <div id="paymentModal" class="payment-modal" hidden>
+      <div class="payment-modal-backdrop"></div>
+      <section class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <header class="payment-dialog-head">
+          <div>
+            <strong id="paymentModalTitle">完成支付</strong>
+            <span>支付成功后此窗口会自动关闭</span>
+          </div>
+          <button id="paymentModalClose" class="payment-close" type="button" aria-label="关闭支付窗口">×</button>
+        </header>
+        <iframe id="paymentFrame" class="payment-frame" title="支付页面" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <footer class="payment-dialog-foot">
+          <button id="paymentModalRefresh" class="button secondary" type="button">我已付款，刷新状态</button>
+          <button id="paymentModalOpenNew" class="button quiet" type="button">新窗口打开</button>
+        </footer>
+      </section>
     </div>
 
     <div class="support-widget">
