@@ -15,8 +15,6 @@ from .config import settings
 
 PAY188_PAID_STATUSES = {"paid", "success", "succeeded", "completed", "trade_success", "finished", "1", "true"}
 PAY188_FAILED_STATUSES = {"failed", "fail", "cancelled", "canceled", "closed", "expired", "0", "false"}
-PAY188_CREATE_SIGN_FIELDS = {"merchantId", "merchantOrderId", "amount", "coinType", "notifyUrl"}
-
 
 def _stringify(value: Any) -> str:
     if isinstance(value, Decimal):
@@ -44,9 +42,8 @@ def _sign_base(params: dict[str, Any], *, exclude: set[str] | None = None) -> st
 
 
 def sign_standard_params(params: dict[str, Any], secret: str) -> str:
-    signing_params = {key: params.get(key) for key in PAY188_CREATE_SIGN_FIELDS}
-    base = _sign_base(signing_params, exclude={"sign", "sign_type"})
-    return hashlib.md5(f"{base}&key={secret}".encode("utf-8")).hexdigest().lower()
+    base = _sign_base(params, exclude={"sign", "sign_type"})
+    return hashlib.md5(f"{base}&key={secret}".encode("utf-8")).hexdigest().upper()
 
 
 def verify_pay188_callback(payload: dict[str, Any], secret: str) -> bool:
@@ -107,9 +104,9 @@ def standard_gateway_url(url: str) -> str:
     if not parts.scheme or not parts.netloc:
         return clean_url
     if parts.path in {"", "/"}:
-        return urlunsplit((parts.scheme, parts.netloc, "/pay/address", "", ""))
-    if parts.path.endswith("/submit.php"):
-        return urlunsplit((parts.scheme, parts.netloc, "/pay/address", "", ""))
+        return urlunsplit((parts.scheme, parts.netloc, "/submit.php", "", ""))
+    if parts.path.endswith("/pay/address"):
+        return urlunsplit((parts.scheme, parts.netloc, "/submit.php", "", ""))
     return clean_url
 
 
@@ -149,10 +146,9 @@ class Pay188Client:
             "merchantId": self.merchant_id,
             "merchantOrderId": order_no,
             "amount": json_amount_value(amount),
-            "coinType": coin_type,
+            "paymentMethod": coin_type,
             "notifyUrl": settings.effective_pay188_notify_url,
             "returnUrl": return_url or settings.effective_pay188_return_url,
-            "subject": title[:120],
         }
         payload["sign"] = sign_standard_params(payload, self.secret)
 

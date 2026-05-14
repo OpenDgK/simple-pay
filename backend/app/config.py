@@ -102,7 +102,7 @@ class Settings:
     xunhupay_plugins: str = _getenv("XUNHUPAY_PLUGINS", "simple-order-pay")
     xunhupay_request_timeout_seconds: int = _get_int("XUNHUPAY_REQUEST_TIMEOUT_SECONDS", 15)
 
-    pay188_gateway_url: str = _getenv("PAY188_GATEWAY_URL", "https://api2.188pay.top/pay/address").rstrip("/")
+    pay188_gateway_url: str = _getenv("PAY188_GATEWAY_URL", "https://api2.188pay.top/submit.php").rstrip("/")
     pay188_merchant_id: str = _getenv("PAY188_MERCHANT_ID", "")
     pay188_secret_key: str = _getenv("PAY188_SECRET_KEY", "")
     pay188_payment_method: str = _getenv("PAY188_PAYMENT_METHOD", "fiat_alipay")
