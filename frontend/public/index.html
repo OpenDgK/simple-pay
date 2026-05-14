@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-3" />
-    <script defer src="/config.js?v=20260514-3"></script>
-    <script defer src="/app.js?v=20260514-3"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-4" />
+    <script defer src="/config.js?v=20260514-4"></script>
+    <script defer src="/app.js?v=20260514-4"></script>
   </head>
   <body>
     <div class="page">
@@ -330,7 +330,11 @@
           </div>
           <button id="paymentModalClose" class="payment-close" type="button" aria-label="关闭支付窗口">×</button>
         </header>
-        <iframe id="paymentFrame" class="payment-frame" title="支付页面" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="payment-qr-panel">
+          <img id="paymentQrImage" class="payment-link-qr" alt="支付二维码" />
+          <strong>请用支付宝扫码支付</strong>
+          <span>不要关闭本页面，付款确认后会自动关闭窗口并发货到邮箱。</span>
+        </div>
         <footer class="payment-dialog-foot">
           <button id="paymentModalRefresh" class="button secondary" type="button">我已付款，刷新状态</button>
           <button id="paymentModalOpenNew" class="button quiet" type="button">新窗口打开</button>

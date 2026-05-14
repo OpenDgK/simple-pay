@@ -139,11 +139,11 @@ function clearCheckoutTimer() {
 
 function openPaymentModal(url, order = null) {
   const modal = $("#paymentModal");
-  const frame = $("#paymentFrame");
-  if (!modal || !frame || !url) return false;
+  const qrImage = $("#paymentQrImage");
+  if (!modal || !qrImage || !url) return false;
   state.paymentUrl = url;
   if (order) state.paymentOrder = order;
-  frame.src = url;
+  qrImage.src = apiUrl(`/payments/qr?data=${encodeURIComponent(url)}`);
   modal.hidden = false;
   document.body.classList.add("payment-open");
   return true;
@@ -151,9 +151,9 @@ function openPaymentModal(url, order = null) {
 
 function closePaymentModal(options = {}) {
   const modal = $("#paymentModal");
-  const frame = $("#paymentFrame");
+  const qrImage = $("#paymentQrImage");
   if (modal) modal.hidden = true;
-  if (frame && options.clearFrame !== false) frame.src = "about:blank";
+  if (qrImage && options.clearFrame !== false) qrImage.removeAttribute("src");
   document.body.classList.remove("payment-open");
 }
 

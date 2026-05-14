@@ -7,12 +7,13 @@ import re
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from sqlalchemy import desc, func, or_, select
 from sqlalchemy.orm import Session
 
@@ -481,6 +482,21 @@ def public_config(db: Session = Depends(get_db)) -> dict[str, Any]:
         "adminPanelPath": settings.admin_panel_path,
         "adminApiPrefix": settings.admin_api_prefix,
     }
+
+
+@app.get("/api/payments/qr")
+def payment_qr(data: str = Query(..., min_length=1, max_length=2048)) -> Response:
+    import qrcode
+    import qrcode.image.svg
+
+    img = qrcode.make(data, image_factory=qrcode.image.svg.SvgPathImage, border=2)
+    stream = BytesIO()
+    img.save(stream)
+    return Response(
+        content=stream.getvalue(),
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.post("/api/orders")
