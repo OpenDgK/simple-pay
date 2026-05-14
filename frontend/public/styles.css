@@ -1432,36 +1432,50 @@ tbody tr:hover {
   font-weight: 700;
 }
 
-.notice-grid {
+.notice-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  padding: 18px 20px 6px;
+  gap: 10px;
+  padding: 16px 20px 0;
 }
 
-.notice-card {
-  display: grid;
-  gap: 12px;
+.notice-tab {
   min-width: 0;
-  margin: 0;
-  padding: 16px;
-  border: 1px solid rgba(2, 132, 199, 0.14);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+  min-height: 48px;
+  border: 1px solid rgba(2, 132, 199, 0.18);
+  border-radius: 14px;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1.25;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.notice-card h3 {
-  margin: 0;
-  color: var(--primary);
-  font-size: 17px;
-  line-height: 1.2;
+.notice-tab:hover {
+  color: var(--accent-blue-dark);
+  border-color: rgba(2, 132, 199, 0.34);
 }
 
-.notice-card img {
+.notice-tab.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-blue));
+  box-shadow: 0 14px 30px rgba(2, 132, 199, 0.22);
+}
+
+.notice-gallery {
+  padding: 16px 20px 6px;
+}
+
+.notice-panel {
+  margin: 0;
+}
+
+.notice-panel img {
   display: block;
   width: 100%;
-  min-height: 0;
+  max-height: min(62vh, 720px);
   border: 1px solid rgba(226, 232, 240, 0.95);
   border-radius: 14px;
   background: #fff;
@@ -1518,7 +1532,7 @@ tbody tr:hover {
   .stats,
   .steps-grid,
   .faq-grid,
-  .notice-grid {
+  .notice-tabs {
     grid-template-columns: 1fr;
   }
 
@@ -1681,8 +1695,9 @@ tbody tr:hover {
     align-items: flex-start;
   }
 
-  .notice-grid {
-    padding: 14px;
+  .notice-tabs,
+  .notice-gallery {
+    padding-inline: 14px;
   }
 
   .notice-dialog-foot .button {

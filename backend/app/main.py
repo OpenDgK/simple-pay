@@ -589,7 +589,7 @@ async def create_order(
             )
             order.daxpay_order_no = created.pay188_order_no
             order.pay_body = created.pay_body
-            order.pay_channel = settings.pay188_payment_method
+            order.pay_channel = settings.pay188_coin_type or settings.pay188_payment_method
         elif settings.payment_mode == "ezboti":
             created = await EzbotiClient().customer_info(
                 external_id=order.order_no,

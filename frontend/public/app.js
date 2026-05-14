@@ -195,6 +195,7 @@ function closePaymentModal(options = {}) {
 function openAfterPayNoticeModal() {
   const modal = $("#afterPayNoticeModal");
   if (!modal) return;
+  setAfterPayNoticePanel("migration");
   modal.hidden = false;
   document.body.classList.add("notice-open");
 }
@@ -203,6 +204,21 @@ function closeAfterPayNoticeModal() {
   const modal = $("#afterPayNoticeModal");
   if (modal) modal.hidden = true;
   document.body.classList.remove("notice-open");
+}
+
+function setAfterPayNoticePanel(key) {
+  const modal = $("#afterPayNoticeModal");
+  if (!modal) return;
+  modal.querySelectorAll(".notice-tab").forEach((tab) => {
+    const active = tab.dataset.noticeKey === key;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  modal.querySelectorAll(".notice-panel").forEach((panel) => {
+    const active = panel.dataset.noticeKey === key;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
 }
 
 function productPlanLabel(product) {
@@ -1180,6 +1196,10 @@ function setupAfterPayNoticeEvents() {
   $("#afterPayNoticeClose")?.addEventListener("click", closeAfterPayNoticeModal);
   $("#afterPayNoticeOk")?.addEventListener("click", closeAfterPayNoticeModal);
   $("#afterPayNoticeModal .notice-modal-backdrop")?.addEventListener("click", closeAfterPayNoticeModal);
+  $("#afterPayNoticeTabs")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-notice-key]");
+    if (button) setAfterPayNoticePanel(button.dataset.noticeKey);
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !$("#afterPayNoticeModal")?.hidden) {
       closeAfterPayNoticeModal();

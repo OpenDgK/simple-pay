@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-12" />
-    <script defer src="/config.js?v=20260514-12"></script>
-    <script defer src="/app.js?v=20260514-12"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-13" />
+    <script defer src="/config.js?v=20260514-13"></script>
+    <script defer src="/app.js?v=20260514-13"></script>
   </head>
   <body>
     <div class="page">
@@ -354,19 +354,27 @@
           </div>
           <button id="afterPayNoticeClose" class="payment-close" type="button" aria-label="关闭注意事项">×</button>
         </header>
-        <div class="notice-grid">
-          <article class="notice-card">
-            <h3>账号聊天记录 / 项目迁移</h3>
-            <img src="/assets/notice-project-migration.svg" alt="账号聊天记录和项目迁移说明" />
-          </article>
-          <article class="notice-card">
-            <h3>账号辅助邮箱绑定</h3>
-            <img src="/assets/notice-email-binding.svg" alt="账号辅助邮箱绑定说明" />
-          </article>
-          <article class="notice-card">
-            <h3>客服邮箱</h3>
-            <img src="/assets/notice-support-email.svg" alt="客服邮箱 1493719411@qq.com" />
-          </article>
+        <div id="afterPayNoticeTabs" class="notice-tabs" role="tablist" aria-label="注意事项栏目">
+          <button class="notice-tab active" type="button" role="tab" aria-selected="true" aria-controls="noticePanelMigration" data-notice-key="migration">
+            账号聊天记录 / 项目迁移
+          </button>
+          <button class="notice-tab" type="button" role="tab" aria-selected="false" aria-controls="noticePanelEmail" data-notice-key="email">
+            账号辅助邮箱绑定
+          </button>
+          <button class="notice-tab" type="button" role="tab" aria-selected="false" aria-controls="noticePanelSupport" data-notice-key="support">
+            客服邮箱
+          </button>
+        </div>
+        <div class="notice-gallery">
+          <figure id="noticePanelMigration" class="notice-panel active" role="tabpanel" data-notice-key="migration">
+            <img src="/assets/notice-project-migration.png" alt="账号聊天记录和项目迁移说明" />
+          </figure>
+          <figure id="noticePanelEmail" class="notice-panel" role="tabpanel" data-notice-key="email" hidden>
+            <img src="/assets/notice-email-binding.png" alt="账号辅助邮箱绑定说明" />
+          </figure>
+          <figure id="noticePanelSupport" class="notice-panel" role="tabpanel" data-notice-key="support" hidden>
+            <img src="/assets/notice-support-email.png" alt="客服邮箱 1493719411@qq.com" />
+          </figure>
         </div>
         <footer class="notice-dialog-foot">
           <button id="afterPayNoticeOk" class="button primary" type="button">我知道了</button>

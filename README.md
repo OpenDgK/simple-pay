@@ -278,13 +278,13 @@ XUNHUPAY_PLUGINS=simple-order-pay
 
 188Pay 文档入口：https://www.188pay.top/dashboard/docs
 
-本项目已接入 188Pay 的“标准 JSON 法币下单”方式。按当前文档，公开法币拉起目前写明只支持支付宝链路，参数值是 `fiat_alipay`；如果 188Pay 后台给你的商户额外开通了微信，请把他们提供的微信方法值填到 `PAY188_PAYMENT_METHOD`。
+本项目已接入 188Pay 的“标准 JSON 法币下单”方式。标准 JSON 入口是 `https://api2.188pay.top/pay/address`。按当前文档，公开法币拉起目前写明只支持支付宝链路，参数值是 `fiat_alipay`；如果 188Pay 后台给你的商户额外开通了微信，请把他们提供的微信方法值填到 `PAY188_PAYMENT_METHOD`。
 
 `.env` 示例：
 
 ```env
 PAYMENT_MODE=pay188
-PAY188_GATEWAY_URL=https://api2.188pay.top/submit.php
+PAY188_GATEWAY_URL=https://api2.188pay.top/pay/address
 PAY188_MERCHANT_ID=你的商户ID
 PAY188_SECRET_KEY=你的商户密钥
 PAY188_PAYMENT_METHOD=fiat_alipay
@@ -303,13 +303,15 @@ PAY188_REQUEST_TIMEOUT_SECONDS=15
 
 后端封装在 `backend/app/pay188.py`：
 
-- 创建支付订单：`POST {PAY188_GATEWAY_URL}`
+- 创建支付订单：`POST {PAY188_GATEWAY_URL}`，默认是 `https://api2.188pay.top/pay/address`
 - 业务订单号：`merchantOrderId`
 - 回调入口：`/api/payments/pay188/notify`
 - 创建支付订单时，后端会给 188Pay 传入每笔订单专属的 `returnUrl=/order/{token}`，用户从支付页返回后会自动轮询支付状态。
-- 下单签名：按参数名排序后拼接 `&key=商户密钥`，MD5 小写。
+- 下单签名：按 188Pay 标准 JSON 文档，仅用 `merchantId`、`merchantOrderId`、`amount`、`coinType`、`notifyUrl` 参与签名，拼接 `&key=商户密钥` 后 MD5 小写。
 - 回调验签：按参数名排序后拼接 `&key=商户密钥`，MD5 后和回调 `sign` 比对。
 - 回调验签通过后，会把订单状态更新为 `paid`，然后自动扣库存、写入交付结果并发送邮件。
+
+注意：188Pay 标准 JSON 接口返回的是 `cashierUrl` 托管收银台链接。用户用支付宝扫描这种第三方网页链接时，支付宝可能提示“即将离开支付宝”。这属于 188Pay 收银台链路的体验，不是本站前端跳转错误。若要做到真正“扫码后直接进入支付宝付款、不出现外部网站提示”，需要 188Pay 额外提供支付宝原生二维码/Deep Link 字段，或改用支付宝官方当面付 / 电脑网站支付等原生接口。
 
 真实支付必须使用公网 HTTPS 回调地址。本地开发继续使用 `PAYMENT_MODE=mock`，不要把本地 `127.0.0.1` 填进 188Pay 后台。
 

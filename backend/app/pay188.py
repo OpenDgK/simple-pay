@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -14,6 +15,7 @@ from .config import settings
 
 PAY188_PAID_STATUSES = {"paid", "success", "succeeded", "completed", "trade_success", "finished", "1", "true"}
 PAY188_FAILED_STATUSES = {"failed", "fail", "cancelled", "canceled", "closed", "expired", "0", "false"}
+PAY188_CREATE_SIGN_FIELDS = {"merchantId", "merchantOrderId", "amount", "coinType", "notifyUrl"}
 
 
 def _stringify(value: Any) -> str:
@@ -42,7 +44,8 @@ def _sign_base(params: dict[str, Any], *, exclude: set[str] | None = None) -> st
 
 
 def sign_standard_params(params: dict[str, Any], secret: str) -> str:
-    base = _sign_base(params, exclude={"sign", "sign_type", "subject"})
+    signing_params = {key: params.get(key) for key in PAY188_CREATE_SIGN_FIELDS}
+    base = _sign_base(signing_params, exclude={"sign", "sign_type"})
     return hashlib.md5(f"{base}&key={secret}".encode("utf-8")).hexdigest().lower()
 
 
@@ -91,6 +94,18 @@ def safe_callback_payload(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
+def standard_gateway_url(url: str) -> str:
+    clean_url = url.rstrip("/")
+    parts = urlsplit(clean_url)
+    if not parts.scheme or not parts.netloc:
+        return clean_url
+    if parts.path in {"", "/"}:
+        return urlunsplit((parts.scheme, parts.netloc, "/pay/address", "", ""))
+    if parts.path.endswith("/submit.php"):
+        return urlunsplit((parts.scheme, parts.netloc, "/pay/address", "", ""))
+    return clean_url
+
+
 @dataclass
 class Pay188CreateResult:
     pay188_order_no: str | None
@@ -101,7 +116,7 @@ class Pay188CreateResult:
 
 class Pay188Client:
     def __init__(self) -> None:
-        self.gateway_url = settings.pay188_gateway_url
+        self.gateway_url = standard_gateway_url(settings.pay188_gateway_url)
         self.merchant_id = settings.pay188_merchant_id
         self.secret = settings.pay188_secret_key
 
@@ -122,17 +137,16 @@ class Pay188Client:
         if missing:
             raise RuntimeError(f"missing 188Pay config: {', '.join(missing)}")
 
+        coin_type = settings.pay188_coin_type or settings.pay188_payment_method or "fiat_alipay"
         payload: dict[str, Any] = {
             "merchantId": self.merchant_id,
             "merchantOrderId": order_no,
             "amount": f"{amount:.2f}",
-            "paymentMethod": settings.pay188_payment_method,
+            "coinType": coin_type,
             "notifyUrl": settings.effective_pay188_notify_url,
             "returnUrl": return_url or settings.effective_pay188_return_url,
             "subject": title[:120],
         }
-        if settings.pay188_coin_type:
-            payload["coinType"] = settings.pay188_coin_type
         payload["sign"] = sign_standard_params(payload, self.secret)
 
         async with httpx.AsyncClient(
