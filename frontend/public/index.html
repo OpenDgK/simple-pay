@@ -4,14 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple Order Pay</title>
-    <link rel="stylesheet" href="/styles.css?v=20260514-6" />
-    <script defer src="/config.js?v=20260514-6"></script>
-    <script defer src="/app.js?v=20260514-6"></script>
+    <link rel="stylesheet" href="/styles.css?v=20260514-7" />
+    <script defer src="/config.js?v=20260514-7"></script>
+    <script defer src="/app.js?v=20260514-7"></script>
   </head>
   <body>
     <div class="page">
       <main>
         <section id="homeView" class="view active">
+          <div class="product-page-tabs-wrap">
+            <div id="productTabs" class="product-tabs" role="tablist" aria-label="选择套餐"></div>
+          </div>
           <section class="hero" aria-label="商品购买">
             <div class="hero-copy">
               <div id="heroBadge" class="badge">自助开通 · 在线支付</div>
@@ -39,10 +42,9 @@
 
             <div class="hero-right product-buy-zone">
               <div class="section-title product-zone-title">
-                <h2 id="order">选择套餐</h2>
-                <p>先切换套餐，再填写邮箱购买。确认收款后会自动发送账号密码。</p>
+                <h2 id="order">填写邮箱购买</h2>
+                <p>当前套餐会按上方选择切换。支付完成后系统会自动发送账号密码。</p>
               </div>
-              <div id="productTabs" class="product-tabs" role="tablist" aria-label="选择套餐"></div>
               <div id="productCards" class="product-purchase-grid" aria-live="polite"></div>
               <div id="checkoutNotice" class="checkout-notice" hidden></div>
             </div>
@@ -51,7 +53,7 @@
           <section id="flow" class="steps-section">
             <div class="section-title centered">
               <h2 id="flowTitle">三步完成开通</h2>
-              <p id="flowIntro">选择商品、填写邮箱、完成支付后等待交付。</p>
+              <p id="flowIntro">选择商品、填写邮箱、完成支付后系统自动发货。</p>
             </div>
             <div class="steps-grid">
               <article class="step-card">
@@ -66,8 +68,8 @@
               </article>
               <article class="step-card">
                 <span class="step-number">3</span>
-                <h3 id="step3Title">等待发货</h3>
-                <p id="step3Body">管理员确认收款后，账号密码会发送到你填写的邮箱。</p>
+                <h3 id="step3Title">支付完成自动发货</h3>
+                <p id="step3Body">支付完成后，系统会自动把货物发送到您的邮箱。</p>
               </article>
             </div>
           </section>

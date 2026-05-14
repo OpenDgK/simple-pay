@@ -64,13 +64,13 @@ DEFAULT_CONTENT: dict[str, str] = {
     "feature2": "支持微信 / 支付宝支付",
     "feature3": "确认后 10 分钟内发货",
     "flowTitle": "三步完成开通",
-    "flowIntro": "选择商品、填写邮箱、完成支付后等待交付。",
+    "flowIntro": "选择商品、填写邮箱、完成支付后系统自动发货。",
     "step1Title": "选择商品",
     "step1Body": "选择需要购买的商品，价格由管理员在后台设置。",
     "step2Title": "填写邮箱",
     "step2Body": "只需要提供邮箱，用于接收账号和密码。",
-    "step3Title": "等待发货",
-    "step3Body": "管理员确认收款后，账号密码会发送到你填写的邮箱。",
+    "step3Title": "支付完成自动发货",
+    "step3Body": "支付完成后，系统会自动把货物发送到您的邮箱。",
 }
 
 DEFAULT_PRODUCTS: list[dict[str, Any]] = [
